@@ -57,7 +57,7 @@ administrador.
   histórico de atividades, WER, voz online e tarefas de compatibilidade.
 - **Limpeza**: cache de shaders, %TEMP%, DNS, Prefetch, cache da Steam.
 - **Reparos**: DISM RestoreHealth, SFC, StartComponentCleanup, CHKDSK.
-- **Rede**: reset de Winsock/TCP-IP (marcado como **destrutivo**, só sob demanda).
+- **Rede**: reset de Winsock/TCP-IP (marcado como **cuidado**, só sob demanda).
 
 ## Segurança e como desfazer
 
@@ -73,8 +73,9 @@ CS2-Optimizer-Backup-AAAAMMDD-HHMMSS\
 - `powerscheme.txt` — plano de energia original
 
 O botão **Desfazer backup** lista os backups e restaura tudo (registro, BCD, plano de
-energia e preferência de GPU). Itens **destrutivos** (reset de rede, reset de configs
-do CS2) são sinalizados em vermelho e pedem confirmação própria.
+energia e preferência de GPU). Dois itens mexem mais fundo — reset de rede e reset das
+configs do CS2 — e aparecem marcados como **Cuidado**, em laranja, pedindo confirmação
+à parte.
 
 O log da execução (`CS2-Optimizer-Log-*.txt`) fica na mesma pasta do programa.
 

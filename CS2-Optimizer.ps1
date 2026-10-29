@@ -1236,7 +1236,7 @@ function Get-BackupsEncontrados {
 
 # Monta a mensagem unica de confirmacao com tudo o que sera aplicado.
 function Get-BatchMessage($lista) {
-    $rotulos = @{ safe = 'seguro'; optional = 'opcional'; destructive = 'DESTRUTIVO' }
+    $rotulos = @{ safe = 'seguro'; optional = 'opcional'; destructive = 'cuidado' }
     $destrutivas = @($lista | Where-Object { $_.Nivel -eq 'destructive' })
     $linhas = @()
     foreach ($x in $lista) {
@@ -1245,7 +1245,7 @@ function Get-BatchMessage($lista) {
     }
     $msg = "Vou aplicar $($lista.Count) correcao(oes):`r`n`r`n" + ($linhas -join "`r`n")
     if ($destrutivas.Count -gt 0) {
-        $msg += "`r`n`r`nATENCAO: $($destrutivas.Count) item(ns) DESTRUTIVO(S) na lista. O backup devolve registro/BCD/plano de energia, mas nao desfaz tudo (ex.: rede resetada)."
+        $msg += "`r`n`r`nObs.: $($destrutivas.Count) item(ns) pedem mais cuidado (reset de rede / configs do CS2). O backup devolve registro/BCD/plano de energia, mas nao desfaz esses dois."
     }
     $msg += "`r`n`r`nAntes de comecar e feito o backup (registro, BCD e plano de energia). O ponto de restauracao e perguntado logo em seguida."
     return $msg
@@ -1290,25 +1290,25 @@ function Confirm-Batch($lista) {
     [void]$lv.Columns.Add('Correcao', 385)
     [void]$lv.Columns.Add('Tipo', 185)
 
-    $rotulos = @{ safe = 'seguro'; optional = 'opcional'; destructive = 'DESTRUTIVO' }
+    $rotulos = @{ safe = 'seguro'; optional = 'opcional'; destructive = 'cuidado' }
     foreach ($x in $lista) {
         $it = New-Object System.Windows.Forms.ListViewItem($x.Titulo)
         [void]$it.SubItems.Add($rotulos[$x.Nivel])
         if ($x.Reinicia) { $it.SubItems[1].Text = $it.SubItems[1].Text + ' / reinicia' }
-        if ($x.Nivel -eq 'destructive') { $it.ForeColor = [System.Drawing.Color]::FromArgb(170, 30, 30) }
+        if ($x.Nivel -eq 'destructive') { $it.ForeColor = [System.Drawing.Color]::FromArgb(170, 110, 0) }
         [void]$lv.Items.Add($it)
     }
 
     if ($temDestrutivo) {
         $n = @($lista | Where-Object { $_.Nivel -eq 'destructive' }).Count
-        $rot = if ($n -eq 1) { 'item DESTRUTIVO' } else { 'itens DESTRUTIVOS' }
-        $aviso = "$n $rot na lista (em vermelho). O backup devolve registro, BCD e plano de energia, mas nao desfaz tudo (ex.: rede resetada)."
-    } else { $aviso = 'Nada aqui e destrutivo - tudo tem volta pelo backup.' }
+        $rot = if ($n -eq 1) { 'item pede mais cuidado' } else { 'itens pedem mais cuidado' }
+        $aviso = "$n $rot (em laranja: reset de rede / configs do CS2). O backup devolve registro, BCD e plano de energia, mas nao desfaz esses dois."
+    } else { $aviso = 'Nada aqui pede cuidado extra - tudo tem volta pelo backup.' }
     $lblAviso = New-Object System.Windows.Forms.Label
     $lblAviso.Text = $aviso
     $lblAviso.Location = New-Object System.Drawing.Point(14, 284)
     $lblAviso.Size = New-Object System.Drawing.Size(578, 50)
-    $lblAviso.ForeColor = if ($temDestrutivo) { [System.Drawing.Color]::FromArgb(170, 30, 30) } else { [System.Drawing.Color]::FromArgb(60, 60, 60) }
+    $lblAviso.ForeColor = if ($temDestrutivo) { [System.Drawing.Color]::FromArgb(170, 110, 0) } else { [System.Drawing.Color]::FromArgb(60, 60, 60) }
 
     $lblBk = New-Object System.Windows.Forms.Label
     $lblBk.Text = "Antes de comecar: backup do registro, BCD e plano de energia.`r`nO ponto de restauracao voce escolhe na proxima tela."
@@ -1615,13 +1615,13 @@ function Update-FixList($fixes) {
     $lv = $script:UiLista
     $lv.BeginUpdate()
     $lv.Items.Clear()
-    $rotulo = @{ safe = 'Seguro'; optional = 'Opcional'; destructive = 'Destrutivo' }
+    $rotulo = @{ safe = 'Seguro'; optional = 'Opcional'; destructive = 'Cuidado' }
     foreach ($fx in $fixes) {
         $item = New-Object System.Windows.Forms.ListViewItem($fx.Titulo)
         [void]$item.SubItems.Add($fx.Situacao)
         [void]$item.SubItems.Add($rotulo[$fx.Nivel])
         $item.Tag = $fx
-        if ($fx.Nivel -eq 'destructive') { $item.ForeColor = [System.Drawing.Color]::FromArgb(150, 40, 40) }
+        if ($fx.Nivel -eq 'destructive') { $item.ForeColor = [System.Drawing.Color]::FromArgb(170, 110, 0) }
         elseif ($fx.Nivel -eq 'optional') { $item.ForeColor = [System.Drawing.Color]::FromArgb(110, 110, 110) }
         if ($fx.Reinicia) { $item.SubItems[1].Text = $item.SubItems[1].Text + ' (pede reinicio)' }
         [void]$lv.Items.Add($item)
