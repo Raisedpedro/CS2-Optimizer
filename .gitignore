@@ -1,0 +1,5 @@
+# logs e backups gerados pelo proprio programa
+CS2-Optimizer-Backup-*/
+CS2-Optimizer-Log-*.txt
+*.tmp
+*.bak
