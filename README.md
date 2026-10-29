@@ -8,6 +8,13 @@ Windows 10/11. Tem interface gráfica (WinForms), não precisa instalar nada e m
 > como voltar atrás. O que o script não consegue fazer (BIOS, driver, placa de vídeo,
 > configuração do jogo) aparece como **checklist manual**.
 
+## Baixar
+
+**[⬇ Última versão (Releases)](https://github.com/Raisedpedro/CS2-Optimizer/releases/latest)**
+
+- `CS2-Optimizer.exe` — programa pronto, só baixar e abrir.
+- `CS2-Optimizer-*-fontes.zip` — `.ps1` + `.bat` + ícone, para quem não quer executável.
+
 ## Como usar
 
 1. Baixe o `CS2-Optimizer.exe` (ou o `CS2-Optimizer.ps1` + `icone.ico`).
