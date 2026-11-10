@@ -83,14 +83,14 @@ public static class Oosu10Catalog
             Advice.Opcional, false,
             Merge(BothDw(@"Software\Policies\Microsoft\Windows\CurrentVersion\PushNotifications", "NoToastApplicationNotification", 1),
                 BothDw(@"Software\Microsoft\Windows\CurrentVersion\PushNotifications", "ToastEnabled", 0)),
-            note: "O O&O não recomenda: você perde avisos de apps, inclusive de mensagens e atualizações."));
+            note: "Não recomendado: você perde avisos de apps, inclusive de mensagens e atualizações."));
 
         list.Add(T("browser-language", Privacidade,
             "Não expor o idioma do Windows aos sites",
             "Marca HttpAcceptLanguageOptOut = 1 para os navegadores não enviarem o idioma local.",
             Advice.Opcional, false,
             BothDw(@"Control Panel\International\User Profile", "HttpAcceptLanguageOptOut", 1),
-            note: "O O&O não recomenda: alguns sites deixam de abrir já no seu idioma."));
+            note: "Não recomendado: alguns sites deixam de abrir já no seu idioma."));
 
         list.Add(T("touch-text-prediction", Privacidade,
             "Desativar sugestões de texto do teclado virtual",
@@ -161,7 +161,7 @@ public static class Oosu10Catalog
             Advice.Opcional, false,
             BothDw(@"Software\Policies\Microsoft\Biometrics", "Enabled", 0),
             BothDw(@"Software\Policies\Microsoft\Biometrics", "Enabled", 1),
-            note: "O O&O não recomenda: você perde o login por rosto/impressão digital."));
+            note: "Não recomendado: você perde o login por rosto/impressão digital."));
 
         // ------------------------------------------- Histórico e Área de Transferência
         list.Add(T("clipboard-history", Historico,
@@ -237,7 +237,7 @@ public static class Oosu10Catalog
             Advice.Opcional, false,
             BothSt(Consent + @"\webcam", "Value", "Deny"),
             BothSt(Consent + @"\webcam", "Value", "Allow"),
-            note: "O O&O não recomenda: quebra webcam em apps da Store, reuniões e reconhecimento facial."));
+            note: "Não recomendado: quebra webcam em apps da Store, reuniões e reconhecimento facial."));
 
         list.Add(T("cap-microphone", Permissoes,
             "Bloquear acesso de apps ao microfone",
@@ -245,7 +245,7 @@ public static class Oosu10Catalog
             Advice.Opcional, false,
             BothSt(Consent + @"\microphone", "Value", "Deny"),
             BothSt(Consent + @"\microphone", "Value", "Allow"),
-            note: "O O&O não recomenda: quebra microfone em apps da Store, Discord da Store e chamadas."));
+            note: "Não recomendado: quebra microfone em apps da Store, Discord da Store e chamadas."));
 
         list.Add(T("cap-voice-activation", Permissoes,
             "Desativar ativação por voz para todos os apps",
@@ -423,7 +423,7 @@ public static class Oosu10Catalog
             "SiteSafetyServicesEnabled = 0.", "SiteSafetyServicesEnabled", 0));
         list.Add(EdgeTweak("edge-smartscreen", "Desativar o filtro SmartScreen do Edge",
             "SmartScreenEnabled = 0.", "SmartScreenEnabled", 0, Advice.Evitar,
-            "O O&O não recomenda e nós também não: é a principal defesa contra phishing e downloads maliciosos."));
+            "Não recomendado: é a principal defesa contra phishing e downloads maliciosos."));
         list.Add(EdgeTweak("edge-typosquatting", "Desativar o verificador de typosquatting",
             "TyposquattingCheckerEnabled = 0.", "TyposquattingCheckerEnabled", 0));
 
@@ -446,7 +446,7 @@ public static class Oosu10Catalog
             @"\Main", "OptimizeWindowsSearchResultsForScreenReaders", 0));
         list.Add(LegacyTweak("edge-legacy-smartscreen", "Edge legado: desativar o filtro SmartScreen",
             @"\PhishingFilter", "EnabledV9", 0, Advice.Evitar,
-            "O O&O não recomenda e nós também não: reduz a proteção contra sites falsos."));
+            "Não recomendado: reduz a proteção contra sites falsos."));
         list.Add(LegacyTweak("edge-legacy-address-dropdown", "Edge legado: desativar autocompletar da barra de endereços",
             @"", "AllowAddressBarDropdown", 0, hklmPolicy: @"SOFTWARE\Microsoft\PolicyManager\current\device\Browser"));
         list.Add(LegacyTweak("edge-legacy-tab-preload", "Edge legado: não pré-carregar abas em segundo plano",
@@ -491,7 +491,7 @@ public static class Oosu10Catalog
         // ---------------------------------------------- Sincronização de Configurações
         list.Add(SyncTweak("sync-all", "Desativar a sincronização de todas as configurações",
             "SyncPolicy = 0.", "SyncPolicy", 0, 5,
-            "O O&O não recomenda: desliga de uma vez a sincronização de tema, senhas, idioma e acessibilidade entre PCs."));
+            "Não recomendado: desliga de uma vez a sincronização de tema, senhas, idioma e acessibilidade entre PCs."));
         list.Add(SyncTweak("sync-design", "Não sincronizar configurações de aparência",
             @"Groups\Personalization", "Enabled", 0, 1));
         list.Add(SyncTweak("sync-browser", "Não sincronizar configurações de navegador",
@@ -629,7 +629,7 @@ public static class Oosu10Catalog
             Advice.Opcional, false,
             LmDw(@"SOFTWARE\Policies\Microsoft\Windows\OneDrive", "DisableFileSyncNGSC", 1),
             LmDw(@"SOFTWARE\Policies\Microsoft\Windows\OneDrive", "DisableFileSyncNGSC", 0),
-            note: "O O&O não recomenda: quem usa OneDrive perde a sincronização de arquivos."));
+            note: "Não recomendado: quem usa OneDrive perde a sincronização de arquivos."));
 
         // ---------------------------------------------------------- Tela de Bloqueio
         list.Add(T("lockscreen-spotlight", TelaBloqueio,
@@ -679,10 +679,10 @@ public static class Oosu10Catalog
 
         list.Add(T("search-box-bing", Diversos,
             "Desativar a extensão Bing do Windows Search",
-            "DisableSearchBoxSuggestions = 1 (o arquivo original traz 0, que não desliga nada).",
+            "DisableSearchBoxSuggestions = 1.",
             Advice.Recomendado, true,
             BothDw(@"Software\Policies\Microsoft\Windows\Explorer", "DisableSearchBoxSuggestions", 1),
-            note: "Corrigido em relação ao OOSU10.reg: o valor 0 do arquivo mantém as sugestões da web ligadas."));
+            note: "Desliga de verdade as sugestões da web na barra de busca."));
 
         list.Add(T("people-taskbar", Diversos,
             "Desativar o ícone Pessoas na barra de tarefas",
@@ -814,24 +814,24 @@ public static class Oosu10Catalog
 
         list.Add(T("steps-recorder", Seguranca,
             "Desativar o Gravador de Passos do Usuário",
-            "DisableUAR = 1 (o arquivo original traz 0, que não desliga nada).",
+            "DisableUAR = 1.",
             Advice.Recomendado, true,
             BothDw(@"SOFTWARE\Policies\Microsoft\Windows\AppCompat", "DisableUAR", 1),
-            note: "Corrigido em relação ao OOSU10.reg."));
+            note: "Desliga de verdade; o valor usado é o que funciona."));
 
         list.Add(T("password-reveal", Seguranca,
             "Desativar o botão de revelar senha no login",
-            "DisablePasswordReveal = 1 (o arquivo original traz 0, que não desliga nada).",
+            "DisablePasswordReveal = 1.",
             Advice.Opcional, false,
             BothDw(@"SOFTWARE\Policies\Microsoft\Windows\CredUI", "DisablePasswordReveal", 1),
-            note: "O O&O não recomenda por usabilidade; o valor do arquivo estava invertido."));
+            note: "Não recomendado por usabilidade."));
 
         list.Add(T("wmdrm-online", Seguranca,
             "Desativar o acesso online do DRM de mídia",
-            "DisableOnline = 1 (o arquivo original traz 0, que não desliga nada).",
+            "DisableOnline = 1.",
             Advice.Recomendado, true,
             BothDw(@"SOFTWARE\Policies\Microsoft\WMDRM", "DisableOnline", 1),
-            note: "Corrigido em relação ao OOSU10.reg."));
+            note: "Desliga de verdade; o valor usado é o que funciona."));
 
         // ------------------------------------------------------------- Windows Update
         list.Add(T("speech-model-update", WindowsUpdate,
@@ -856,7 +856,7 @@ public static class Oosu10Catalog
             "ExcludeWUDriversInQualityUpdate = 1.",
             Advice.Opcional, false,
             LmDw(@"SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate", "ExcludeWUDriversInQualityUpdate", 1),
-            note: "O O&O não recomenda: útil para segurar um driver ruim, mas você deixa de receber correções automáticas."));
+            note: "Não recomendado: útil para segurar um driver ruim, mas você deixa de receber correções automáticas."));
 
         list.Add(T("defer-updates", WindowsUpdate,
             "Adiar atualizações de recursos e qualidade",
@@ -892,7 +892,7 @@ public static class Oosu10Catalog
             "RegisteredWithAU = 0.",
             Advice.Opcional, false,
             LmDw(@"SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Services\7971f918-a847-4430-9279-4a52d1efe18d", "RegisteredWithAU", 0),
-            note: "O O&O não recomenda: Office e outros produtos deixam de ser atualizados por aqui."));
+            note: "Não recomendado: Office e outros produtos deixam de ser atualizados por aqui."));
 
         list.Add(T("windows-update-service", WindowsUpdate,
             "Desativar o serviço do Windows Update",
@@ -901,7 +901,7 @@ public static class Oosu10Catalog
             LmDw(@"System\CurrentControlSet\Services\wuauserv", "Start", 4),
             LmDw(@"System\CurrentControlSet\Services\wuauserv", "Start", 3),
             reboot: true,
-            note: "O O&O não recomenda: você para de receber correções de segurança. Use só temporariamente e reative depois."));
+            note: "Não recomendado: você para de receber correções de segurança. Use só temporariamente e reative depois."));
 
         list.Add(T("update-notifications", WindowsUpdate,
             "Silenciar notificações do Windows Update",

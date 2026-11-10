@@ -140,7 +140,7 @@
                             <StackPanel>
                                 <TextBlock Text="Como desfazer" FontWeight="SemiBold" />
                                 <TextBlock Style="{StaticResource MutedText}" Margin="0,4,0,0"
-                                           Text="Cada valor alterado entra no journal do backup. Na aba Backups / Desfazer, restaure a pasta da sessão para devolver os valores anteriores e apagar o que o programa criou." />
+                                           Text="Cada valor alterado é salvo antes, no backup da sessão. Na aba Backups / Desfazer, restaure essa pasta para devolver os valores anteriores e apagar o que o programa criou." />
                             </StackPanel>
                         </Border>
                     </StackPanel>

@@ -247,7 +247,7 @@ public sealed class ConsoleRunner
     private static void PrintChecklist(IReadOnlyList<string> manual, bool needReboot)
     {
         ConsoleHelper.Write("");
-        ConsoleHelper.Write("=== Checklist MANUAL (o script não consegue fazer/verificar) ===", ConsoleColor.Cyan);
+        ConsoleHelper.Write("=== Checklist MANUAL (o que o programa não consegue fazer ou verificar) ===", ConsoleColor.Cyan);
         foreach (var item in manual) ConsoleHelper.Write("  [ ] " + item, ConsoleColor.White);
 
         ConsoleHelper.Write("");

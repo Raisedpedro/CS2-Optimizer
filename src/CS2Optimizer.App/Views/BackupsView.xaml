@@ -15,7 +15,7 @@
             <StackPanel Grid.Row="0">
                 <TextBlock Text="Backups / Desfazer" Style="{StaticResource TitleText}" />
                 <TextBlock Style="{StaticResource SubtitleText}" Margin="0,4,0,0"
-                           Text="Cada aplicação cria uma pasta com .reg, BCD, plano de energia e journal. Restaurar devolve os valores anteriores e apaga o que o programa criou. Arquivos .reg fora do padrão são recusados." />
+                           Text="Antes de aplicar qualquer coisa, o programa salva uma cópia do que vai mudar (registro, BCD e plano de energia). Restaurar devolve os valores anteriores e apaga o que o programa criou." />
             </StackPanel>
             <WrapPanel Grid.Row="1" HorizontalAlignment="Right" Margin="0,8,0,0">
                 <Button Content="Atualizar" Style="{StaticResource SecondaryButton}"
@@ -60,7 +60,7 @@
                                    HorizontalAlignment="Center" />
                         <TextBlock Style="{StaticResource MutedText}" Margin="0,8,0,0" TextAlignment="Center"
                                    TextWrapping="Wrap"
-                                   Text="Nada foi alterado nesta máquina. Antes da primeira aplicação, o programa cria uma pasta com .reg, BCD, plano de energia e journal. Você também pode restaurar um backup já existente de outra pasta." />
+                                   Text="Nada foi alterado nesta máquina ainda. Na primeira aplicação, o programa salva aqui uma cópia do que for mudar, para você poder voltar atrás. Também dá para restaurar um backup de outra pasta." />
                     </StackPanel>
                 </Grid>
             </Border>
@@ -98,9 +98,9 @@
                             <StackPanel>
                                 <TextBlock Text="O que o desfazer faz" FontWeight="SemiBold" />
                                 <TextBlock Style="{StaticResource MutedText}" Margin="0,4,0,0"
-                                           Text="Reimporta apenas .reg com cabeçalho correto e chaves que o próprio programa exporta; desfaz o journal do mais novo para o mais antigo; restaura o BCD e o plano de energia. Reinicie depois." />
+                                           Text="Devolve os valores anteriores do registro (só o que o próprio programa alterou), do mais recente para o mais antigo, e restaura o BCD e o plano de energia. Reinicie depois." />
                                 <TextBlock Style="{StaticResource MutedText}" Margin="0,6,0,0"
-                                           Text="O backup NÃO desfaz rede (net-reset) nem configurações do CS2 renomeadas para 730.old; esses casos exigem ação manual." />
+                                           Text="Rede (reset de Winsock/TCP-IP) e configurações do CS2 renomeadas não voltam pelo backup; esses casos exigem ação manual." />
                             </StackPanel>
                         </Border>
                     </StackPanel>

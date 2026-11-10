@@ -129,7 +129,7 @@ public sealed class DiagnosticEngine
 
         var locations = ctx.Ram.Select(r => r.Locator).Distinct(StringComparer.OrdinalIgnoreCase).Count();
         if (ctx.Ram.Count >= 2 && locations < ctx.Ram.Count)
-            Info("A BIOS reporta o mesmo nome de slot para os pentes; não dá para confirmar os slots por script. Use o CPU-Z.");
+            Info("A BIOS reporta o mesmo nome de slot para os pentes; não dá para confirmar os slots pelo programa. Use o CPU-Z.");
 
         if (ctx.Ram.Count == 1)
         {
@@ -197,7 +197,7 @@ public sealed class DiagnosticEngine
         }
 
         Todo("Confirme a taxa de atualização real do monitor (OSD ou testufo.com). Se estiver abaixo do máximo, ajuste pelo painel do driver (não pelo Windows).");
-        Todo("Windows > Sistema > Tela > Elementos gráficos: confirme que o cs2.exe está com \"Alto desempenho\" (o script define isso).");
+        Todo("Windows > Sistema > Tela > Elementos gráficos: confirme que o cs2.exe está com \"Alto desempenho\" (o programa já define isso).");
     }
 
     private void RunStorage(FixContext ctx)
@@ -244,7 +244,7 @@ public sealed class DiagnosticEngine
         }
 
         Info($"Cache de shaders (DirectX/driver/Steam): ~{ctx.ShaderMB} MB");
-        Info($"Pastas de config do CS2 (userdata\\...\\730): {steam.Userdata730.Count}");
+        Info($"Pastas de configuração do CS2: {steam.Userdata730.Count}");
     }
 
     private void RunMpo(FixContext ctx)
@@ -390,7 +390,7 @@ public sealed class DiagnosticEngine
         }
         else if (ctx.HvciActive)
         {
-            Info("Integridade de memória (HVCI/VBS) ATIVA: custa alguns % de FPS. Desligar mexe na Segurança do Windows (Isolamento de núcleo) e reduz proteção - decisão sua, o script não altera.");
+            Info("Integridade de memória (HVCI/VBS) ATIVA: custa alguns % de FPS. Desligar mexe na Segurança do Windows (Isolamento de núcleo) e reduz proteção - decisão sua, o programa não altera.");
             Todo("Segurança do Windows > Segurança do dispositivo > Isolamento de núcleo > Integridade de memória: desligar devolve alguns % de FPS, mas tira uma camada de proteção do kernel. Decida.");
         }
         else

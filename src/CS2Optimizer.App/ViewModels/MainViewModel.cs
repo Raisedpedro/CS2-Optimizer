@@ -61,7 +61,7 @@ public sealed class MainViewModel : ObservableObject
     private bool _oosu10OnlyPending;
     private Oosu10TweakViewModel? _selectedOosu10;
     private bool _suppressOosu10Refresh;
-    private string _oosu10Summary = "Marque os ajustes que deseja aplicar ou use o preset sugerido para CS2.";
+    private string _oosu10Summary = "Marque os ajustes que deseja aplicar ou use as sugestões para CS2.";
 
     private bool _isProgressIndeterminate = true;
     private double _progressValue;
@@ -895,7 +895,7 @@ public sealed class MainViewModel : ObservableObject
             if (tweaks.Count > 0)
             {
                 Status = "Aplicando ajustes do O&O ShutUp10...";
-                UpdateOperationDetail($"{tweaks.Count} ajuste(s) do preset sugerido.");
+                UpdateOperationDetail($"{tweaks.Count} ajuste(s) sugeridos para CS2.");
                 var oosu = await Task.Run(() => _services.Oosu10.Apply(
                     tweaks, restore: false,
                     log: msg => _services.Logger.Log(msg),
@@ -1078,7 +1078,7 @@ public sealed class MainViewModel : ObservableObject
         if (choice == RestorePointChoice.Cancel) return false;
 
         Status = "Criando backup...";
-        StatusDetail = "Exportando registro, BCD e plano de energia.";
+        StatusDetail = "Salvando registro, BCD e plano de energia.";
         UpdateOperationDetail("Criando backup do registro, BCD e plano de energia...");
         await _services.Backup.CreateBackupAsync(
             BackupService.NewStamp(), choice == RestorePointChoice.Yes);
@@ -1476,7 +1476,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         question.AppendLine();
-        question.AppendLine("Todas as escritas entram no journal do backup e podem ser revertidas.");
+        question.AppendLine("Tudo é salvo no backup antes e pode ser revertido.");
 
         if (!_interaction.Confirm(question.ToString(), risky > 0 ? FixLevel.Risky : FixLevel.Safe))
             return;
@@ -1559,7 +1559,7 @@ public sealed class MainViewModel : ObservableObject
         var confirmed = _interaction.Confirm(
             $"Reverter {selected.Count} ajuste(s) selecionado(s)?\n\n" +
             "Cada item volta ao estado alternativo do O&O ou, quando não existe, o valor é removido. " +
-            "As alterações entram no journal do backup.",
+            "As alterações são salvas antes, no backup.",
             FixLevel.Safe);
         if (!confirmed) return;
 

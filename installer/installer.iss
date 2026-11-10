@@ -1,5 +1,5 @@
-#define MyAppName "CS2 / Windows Optimizer"
-#define MyAppVersion "1.0.0"
+﻿#define MyAppName "CS2 / Windows Optimizer"
+#define MyAppVersion "1.0.3"
 #define MyAppPublisher "CS2 Optimizer"
 #define MyAppExeName "CS2Optimizer.exe"
 #define MyAppId "{{8E2E9C1A-6D7B-4E6F-9B3A-2C1D5E7F9A01}"
@@ -28,7 +28,7 @@ SetupLogging=yes
 Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "Criar atalho na Ã¡rea de trabalho"; GroupDescription: "Atalhos:"; Flags: unchecked
+Name: "desktopicon"; Description: "Criar atalho na área de trabalho"; GroupDescription: "Atalhos:"; Flags: unchecked
 
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -72,7 +72,7 @@ begin
   if IsDotNet8DesktopRuntimeInstalled then
     Exit;
 
-  if MsgBox('O .NET 8 Desktop Runtime nÃ£o foi encontrado.' + #13#10 + #13#10 +
+  if MsgBox('O .NET 8 Desktop Runtime não foi encontrado.' + #13#10 + #13#10 +
             'Deseja tentar instalar automaticamente pelo winget agora?',
             mbConfirmation, MB_YESNO) = IDYES then
   begin
@@ -81,7 +81,7 @@ begin
                  '--accept-package-agreements --accept-source-agreements',
                  '', SW_HIDE, ewWaitUntilTerminated, ResultCode)) or (ResultCode <> 0) then
     begin
-      MsgBox('NÃ£o foi possÃ­vel instalar o .NET 8 Desktop Runtime automaticamente.' + #13#10 +
+      MsgBox('Não foi possível instalar o .NET 8 Desktop Runtime automaticamente.' + #13#10 +
              'Baixe em https://dotnet.microsoft.com/download/dotnet/8.0 e rode o instalador novamente.',
              mbError, MB_OK);
       Result := False;
@@ -95,4 +95,5 @@ begin
     Result := False;
   end;
 end;
+
 

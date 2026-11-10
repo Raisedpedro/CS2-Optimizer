@@ -89,7 +89,7 @@ public sealed class RegistryJournal
         }
         catch (Exception ex)
         {
-            log?.Invoke("Não consegui gravar o journal de desfazer: " + ex.Message, LogLevel.Warn);
+            log?.Invoke("Não consegui gravar os dados de desfazer: " + ex.Message, LogLevel.Warn);
             return false;
         }
     }
@@ -146,7 +146,7 @@ public sealed class RegistryJournal
             }
         }
 
-        log?.Invoke($"  journal: {restored} valor(es) de registro devolvido(s) ao estado anterior " +
+        log?.Invoke($"  Desfazer: {restored} valor(es) de registro devolvido(s) ao estado anterior " +
                     "(valores criados pelo programa foram apagados).", LogLevel.Ok);
         return restored;
     }

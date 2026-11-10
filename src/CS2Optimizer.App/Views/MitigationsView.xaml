@@ -145,7 +145,7 @@
                                 <StackPanel>
                                     <TextBlock Text="Como desfazer" FontWeight="SemiBold" FontSize="13" />
                                     <TextBlock Style="{StaticResource MutedText}" Margin="0,4,0,0" FontSize="12"
-                                               Text="Voltar ao padrão apaga FeatureSettingsOverride, Mask e MinVm. O journal do backup também devolve o estado anterior. Reinicie para valer." />
+                                               Text="Voltar ao padrão apaga as três chaves de sobrescrita. O backup da sessão também devolve o estado anterior. Reinicie para valer." />
                                 </StackPanel>
                             </Border>
                         </StackPanel>

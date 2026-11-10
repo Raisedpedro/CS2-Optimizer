@@ -71,8 +71,8 @@ public sealed class WpfInteraction : IAppInteraction
     {
         var message =
             "Restaurar o backup abaixo?\n\n" + path + "\n\n" +
-            "O programa vai reimportar os arquivos .reg permitidos, desfazer o journal de registro, " +
-            "restaurar o BCD e reativar o plano de energia original. " +
+            "O programa devolve os valores anteriores do registro (só o que ele mesmo alterou), " +
+            "restaura o BCD e reativa o plano de energia original. " +
             "Reinicie o PC depois. Deseja continuar?";
         return OnUi(() =>
         {

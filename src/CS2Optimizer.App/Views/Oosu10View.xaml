@@ -21,7 +21,7 @@
             <StackPanel Grid.Row="0">
                 <TextBlock Text="O&amp;O ShutUp10" Style="{StaticResource TitleText}" />
                 <TextBlock Style="{StaticResource SubtitleText}" Margin="0,4,0,0"
-                           Text="Todos os ajustes do arquivo OOSU10.reg traduzidos para PT-BR, com recomendação por item. Cada alteração passa pelo journal do backup e pode ser desfeita." />
+                           Text="Ajustes de privacidade e telemetria do Windows, com uma recomendação por item. Nada entra sem você marcar, cada mudança é salva antes e pode ser desfeita em Backups / Desfazer." />
                 <TextBlock Text="{Binding Oosu10Summary}" Style="{StaticResource MutedText}"
                            Margin="0,6,0,0" />
             </StackPanel>
@@ -168,20 +168,20 @@
                                 Margin="0,16,0,0"
                                 Visibility="{Binding SelectedOosu10.HasNote, Converter={StaticResource BoolToVisibility}}">
                             <StackPanel>
-                                <TextBlock Text="Aviso do O&amp;O ShutUp10" FontWeight="SemiBold" FontSize="12"
+                                <TextBlock Text="Atenção" FontWeight="SemiBold" FontSize="12"
                                            Foreground="{StaticResource CautionBrush}" />
                                 <TextBlock Text="{Binding SelectedOosu10.Note}" Style="{StaticResource MutedText}"
                                            Margin="0,4,0,0" FontSize="12" TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
 
-                        <TextBlock Text="Chaves gravadas ao ativar" Style="{StaticResource SectionTitle}" Margin="0,18,0,4" />
+                        <TextBlock Text="O que muda no Windows" Style="{StaticResource SectionTitle}" Margin="0,18,0,4" />
                         <Border Background="{StaticResource CardAltBrush}" CornerRadius="6" Padding="10">
                             <TextBlock Text="{Binding SelectedOosu10.OpsText}" Style="{StaticResource MonoText}"
                                        FontSize="11" TextWrapping="Wrap" />
                         </Border>
 
-                        <TextBlock Text="Estado ao reverter" Style="{StaticResource SectionTitle}" Margin="0,18,0,4" />
+                        <TextBlock Text="Como fica ao reverter" Style="{StaticResource SectionTitle}" Margin="0,18,0,4" />
                         <Border Background="{StaticResource CardAltBrush}" CornerRadius="6" Padding="10">
                             <TextBlock Text="{Binding SelectedOosu10.RestoreText}" Style="{StaticResource MonoText}"
                                        FontSize="11" TextWrapping="Wrap" />
@@ -193,7 +193,7 @@
                                 <TextBlock Text="Como desfazer" FontWeight="SemiBold" FontSize="13" />
                                 <TextBlock Style="{StaticResource MutedText}" Margin="0,4,0,0" FontSize="12"
                                            TextWrapping="Wrap"
-                                           Text="Marque o item e use &quot;Reverter selecionados&quot; para voltar ao estado alternativo do O&amp;O. O journal do backup também devolve tudo em Backups / Desfazer." />
+                                           Text="Marque o item e use &quot;Reverter selecionados&quot; para voltar ao estado anterior. Em Backups / Desfazer você também pode voltar tudo de uma vez." />
                             </StackPanel>
                         </Border>
                     </StackPanel>

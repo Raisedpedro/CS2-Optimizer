@@ -24,7 +24,7 @@ public static class Cs2Tips
     public static string BuildChecklist(IReadOnlyList<string> manual, bool needReboot)
     {
         var sb = new StringBuilder();
-        sb.AppendLine("CHECKLIST MANUAL - o script não consegue fazer/verificar");
+        sb.AppendLine("CHECKLIST MANUAL - o que o programa não consegue fazer ou verificar");
         sb.AppendLine();
         if (manual.Count == 0) sb.AppendLine("(nada pendente)");
         foreach (var item in manual) sb.AppendLine("  [ ] " + item);

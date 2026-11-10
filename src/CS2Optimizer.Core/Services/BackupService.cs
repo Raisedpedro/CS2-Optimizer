@@ -297,7 +297,7 @@ public sealed class BackupService
         {
             throw new InvalidOperationException(
                 "Esta pasta não parece um backup do CS2 / Windows Optimizer.\n" +
-                "Um backup tem journal.json, algum .reg, bcd.bak ou powerscheme.txt.\n\n" + directory);
+                "Um backup tem os arquivos que o próprio programa salvou (registro, BCD e/ou plano de energia).\n\n" + directory);
         }
 
         _log.Title("Restaurando de: " + directory);
@@ -308,7 +308,7 @@ public sealed class BackupService
             if (hasJournal && (name.Equals("power.reg", StringComparison.OrdinalIgnoreCase) ||
                                name.Equals("graphics.reg", StringComparison.OrdinalIgnoreCase)))
             {
-                _log.Log("  ignorado (coberto pelo journal): " + name);
+                _log.Log("  ignorado (já incluído no backup): " + name);
                 continue;
             }
 

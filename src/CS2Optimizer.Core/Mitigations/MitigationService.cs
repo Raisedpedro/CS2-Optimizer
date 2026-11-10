@@ -310,7 +310,7 @@ public sealed class MitigationService
         lines.Add("Lembretes:");
         lines.Add("  - O que você muda aqui só passa a valer DEPOIS de reiniciar (o programa nunca reinicia sozinho).");
         lines.Add("  - Para ver o que está REALMENTE em vigor no kernel, no PowerShell (administrador): Install-Module SpeculationControl ; Get-SpeculationControlSettings (módulo oficial da Microsoft, KB4074629).");
-        lines.Add("  - Todo valor gravado aqui vai para o journal do backup: o botão Desfazer devolve o estado anterior.");
+        lines.Add("  - Todo valor gravado aqui é salvo antes no backup: o botão Desfazer devolve o estado anterior.");
         return string.Join(Environment.NewLine, lines);
     }
 
