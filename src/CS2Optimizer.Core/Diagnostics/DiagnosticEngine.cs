@@ -9,7 +9,7 @@ public sealed record DiagnosticResult(
     IReadOnlyList<string> Manual,
     IReadOnlyList<string> Problems);
 
-/// <summary>Diagnóstico somente leitura (fase 1 do protótipo).</summary>
+/// <summary>Diagnóstico somente leitura: lê o sistema e não altera nada.</summary>
 public sealed class DiagnosticEngine
 {
     private readonly AppLogger _log;

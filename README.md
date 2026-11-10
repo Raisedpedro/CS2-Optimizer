@@ -1,10 +1,12 @@
-# CS2 / Windows Optimizer (porta C# / WPF)
+# CS2 / Windows Optimizer
 
-Porta do protótipo `CS2-Optimizer.ps1` (WinForms) para **C# / .NET 8 / WPF**, com tema escuro, cartões, lista agrupada por categoria, escala de DPI e execução como administrador pelo manifesto (sem relançar processo).
+Programa para Windows 10/11 que **diagnostica a máquina e aplica ajustes seguros e reversíveis** para jogar CS2. Feito em **C# / .NET 8 / WPF**, com tema escuro, cartões, lista agrupada por categoria, escala de DPI e execução como administrador pelo manifesto (sem relançar processo).
 
 > **Sem promessa de FPS.** O programa mede o que dá para medir, explica o que cada item faz e deixa claro quando o ganho é incerto. Meça antes/depois (mapa *CS2 FPS Benchmark* da Oficina) e olhe o **1% low**, não só a média.
 
 ## Baixar e usar (portátil)
+
+**[⬇ Baixar a última versão](https://github.com/Raisedpedro/CS2-Optimizer/releases/latest)**
 
 O Release do GitHub traz um único zip: **`CS2Optimizer-<versão>-portable-win-x64.zip`**.
 
