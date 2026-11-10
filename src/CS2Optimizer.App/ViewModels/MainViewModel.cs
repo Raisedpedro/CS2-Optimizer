@@ -14,6 +14,7 @@ using CS2Optimizer.Core.Mitigations;
 using CS2Optimizer.Core.Models;
 using CS2Optimizer.Core.Oosu10;
 using CS2Optimizer.Core.Services;
+using CS2Optimizer.Core.Updates;
 
 namespace CS2Optimizer.App.ViewModels;
 
@@ -69,9 +70,19 @@ public sealed class MainViewModel : ObservableObject
     private string _busyTitle = "";
     private string _busyDetail = "";
     private int _healthScore;
-    private string _healthScoreDisplay = "—";
+    private string _healthScoreDisplay = "-";
     private string _healthScoreLabel = "Aguardando leitura";
     private Brush _healthScoreBrush = UiBrushes.Muted;
+
+    // ---- atualização ----
+    private readonly UpdateSettings _updateSettings = UpdateSettings.Load();
+    private bool _isCheckingUpdate;
+    private bool _hasUpdate;
+    private string _updateTitle = "";
+    private string _updateDetail = "";
+    private string _updateStatusText = "Ainda não verificado nesta sessão.";
+    private string _updateUrl = UpdateChecker.ReleasesPageUrl(UpdateChecker.DefaultRepository);
+    private string? _latestVersionTag;
 
     public MainViewModel(AppServices services, IAppInteraction interaction)
     {
@@ -102,6 +113,10 @@ public sealed class MainViewModel : ObservableObject
         OpenLogFileCommand = new RelayCommand(OpenLogFile);
         OpenLogFolderCommand = new RelayCommand(OpenLogFolder);
         ToggleLogCommand = new RelayCommand(() => IsLogExpanded = !IsLogExpanded);
+        CheckUpdatesCommand = new AsyncRelayCommand(() => CheckForUpdatesAsync(true), () => !IsCheckingUpdate);
+        OpenUpdateCommand = new RelayCommand(OpenUpdatePage);
+        DismissUpdateCommand = new RelayCommand(DismissUpdate);
+        OpenProjectPageCommand = new RelayCommand(OpenProjectPage);
         ShowTabCommand = new RelayCommand(parameter =>
             SelectedTabIndex = AppTabs.IndexOf(parameter as string));
 
@@ -161,6 +176,12 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand OpenLogFolderCommand { get; }
     public RelayCommand ToggleLogCommand { get; }
     public RelayCommand ShowTabCommand { get; }
+
+    // ---- atualização ----
+    public AsyncRelayCommand CheckUpdatesCommand { get; }
+    public RelayCommand OpenUpdateCommand { get; }
+    public RelayCommand DismissUpdateCommand { get; }
+    public RelayCommand OpenProjectPageCommand { get; }
 
     public bool IsBusy
     {
@@ -372,6 +393,60 @@ public sealed class MainViewModel : ObservableObject
     public string VersionText =>
         "v" + (System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.0.0");
 
+    public static string ProjectUrl => $"https://github.com/{UpdateChecker.DefaultRepository}";
+
+    /// <summary>Aparece a barra de "nova versão" no topo (nunca uma caixa de diálogo).</summary>
+    public bool HasUpdate
+    {
+        get => _hasUpdate;
+        private set => SetProperty(ref _hasUpdate, value);
+    }
+
+    public string UpdateTitle
+    {
+        get => _updateTitle;
+        private set => SetProperty(ref _updateTitle, value);
+    }
+
+    public string UpdateDetail
+    {
+        get => _updateDetail;
+        private set => SetProperty(ref _updateDetail, value);
+    }
+
+    /// <summary>Estado da última verificação, mostrado no cartão de atualizações.</summary>
+    public string UpdateStatusText
+    {
+        get => _updateStatusText;
+        private set => SetProperty(ref _updateStatusText, value);
+    }
+
+    public bool IsCheckingUpdate
+    {
+        get => _isCheckingUpdate;
+        private set
+        {
+            if (!SetProperty(ref _isCheckingUpdate, value)) return;
+            CheckUpdatesCommand.RaiseCanExecuteChanged();
+        }
+    }
+
+    /// <summary>Opção do usuário: verificar sozinho ao abrir (1x por dia).</summary>
+    public bool AutoCheckUpdates
+    {
+        get => _updateSettings.CheckOnStart;
+        set
+        {
+            if (_updateSettings.CheckOnStart == value) return;
+            _updateSettings.CheckOnStart = value;
+            _updateSettings.Save();
+            OnPropertyChanged();
+            UpdateStatusText = value
+                ? "Verificação automática ligada (ao abrir, no máximo 1x por dia)."
+                : "Verificação automática desligada. Use \"Verificar agora\" quando quiser.";
+        }
+    }
+
     public int FixCount => Fixes.Count;
     public int RecommendedCount => Fixes.Count(f => f.IsRecommended);
     public int PendingRecommendedOosuCount =>
@@ -477,7 +552,13 @@ public sealed class MainViewModel : ObservableObject
     public bool HasOosu10Items => Oosu10Visible.Count > 0;
     public bool HasNoOosu10Items => Oosu10Visible.Count == 0;
 
-    public Task InitializeAsync() => ScanAsync();
+    public async Task InitializeAsync()
+    {
+        await ScanAsync();
+
+        // Depois da primeira leitura, sem travar a janela: a checagem de versão é discreta.
+        _ = CheckForUpdatesAsync(false);
+    }
 
     private void BeginOperation(string title, string detail, int? total = null)
     {
@@ -1834,6 +1915,119 @@ public sealed class MainViewModel : ObservableObject
             while (LogItems.Count > 3000)
                 LogItems.RemoveAt(0);
         });
+    }
+
+    // ------------------------------------------------------------------ atualização
+
+    private static Version AppVersion =>
+        System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version(1, 0, 0);
+
+    /// <summary>
+    /// Consulta a última release publicada. Nunca interrompe o usuário: o resultado
+    /// aparece na barra do topo (nova versão) ou no cartão de atualizações.
+    /// </summary>
+    public async Task CheckForUpdatesAsync(bool manual)
+    {
+        if (IsCheckingUpdate) return;
+
+        if (!manual)
+        {
+            if (!_updateSettings.CheckOnStart) return;
+
+            // automático no máximo 1x por dia, para não bater na API a cada abertura
+            var ultima = _updateSettings.LastCheck;
+            if (ultima is not null && DateTimeOffset.Now - ultima.Value < TimeSpan.FromHours(24)) return;
+        }
+
+        IsCheckingUpdate = true;
+        UpdateStatusText = "Verificando atualizações...";
+        try
+        {
+            var resultado = await UpdateChecker.CheckAsync(AppVersion);
+            _updateSettings.LastCheck = DateTimeOffset.Now;
+            _updateSettings.Save();
+            ApplyUpdateResult(resultado, manual);
+        }
+        catch (Exception ex)
+        {
+            _services.Logger.Warn("Falha ao verificar atualização: " + ex.Message);
+            UpdateStatusText = "Não foi possível verificar agora.";
+        }
+        finally
+        {
+            IsCheckingUpdate = false;
+        }
+    }
+
+    private void ApplyUpdateResult(UpdateCheckResult resultado, bool manual)
+    {
+        var quando = DateTime.Now.ToString("dd/MM 'às' HH:mm");
+
+        switch (resultado.Status)
+        {
+            case UpdateCheckStatus.UpToDate:
+                HasUpdate = false;
+                _latestVersionTag = null;
+                UpdateStatusText = $"Você está na versão mais recente ({VersionText}). Verificado em {quando}.";
+                if (manual) _services.Logger.Ok("Nenhuma atualização disponível.");
+                break;
+
+            case UpdateCheckStatus.UpdateAvailable:
+                var info = resultado.Update!;
+                _latestVersionTag = info.Tag;
+                _updateUrl = info.ReleaseUrl;
+
+                if (string.Equals(_updateSettings.DismissedVersion, info.Tag, StringComparison.OrdinalIgnoreCase))
+                {
+                    HasUpdate = false;
+                    UpdateStatusText = $"A versão {info.Tag} está disponível (aviso dispensado). Verificado em {quando}.";
+                    break;
+                }
+
+                HasUpdate = true;
+                UpdateTitle = $"Nova versão disponível: {info.Tag}";
+                UpdateDetail = $"Você está na {VersionText}.";
+                UpdateStatusText = $"Versão {info.Tag} disponível (você tem {VersionText}). Verificado em {quando}.";
+                if (manual) _services.Logger.Ok($"Atualização disponível: {info.Tag}.");
+                break;
+
+            default:
+                HasUpdate = false;
+                UpdateStatusText = manual
+                    ? "Não foi possível verificar agora (sem internet ou GitHub fora do ar). Tente de novo."
+                    : "Verificação de atualização indisponível agora.";
+                break;
+        }
+    }
+
+    /// <summary>"Dispensar" esconde só esta versão; a próxima que sair aparece de novo.</summary>
+    private void DismissUpdate()
+    {
+        if (!string.IsNullOrWhiteSpace(_latestVersionTag))
+        {
+            _updateSettings.DismissedVersion = _latestVersionTag;
+            _updateSettings.Save();
+        }
+
+        HasUpdate = false;
+        UpdateStatusText = "Aviso dispensado. Dá para baixar quando quiser em \"Abrir no GitHub\".";
+    }
+
+    private void OpenUpdatePage() => OpenUrl(_updateUrl);
+
+    private void OpenProjectPage() => OpenUrl(ProjectUrl);
+
+    private static void OpenUrl(string url)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(url)) return;
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch
+        {
+            // Sem navegador padrão: não é erro do programa.
+        }
     }
 
     private void Post(Action action)

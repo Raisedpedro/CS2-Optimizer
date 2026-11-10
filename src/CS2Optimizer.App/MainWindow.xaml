@@ -14,6 +14,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -109,8 +110,41 @@
             </StackPanel>
         </Border>
 
+        <!-- Aviso discreto de nova versão (nunca caixa de diálogo) -->
+        <Border Grid.Row="3" Background="{StaticResource AccentSoftBrush}"
+                BorderBrush="{StaticResource AccentLineBrush}" BorderThickness="0,0,0,1" Padding="22,10"
+                Visibility="{Binding HasUpdate, Converter={StaticResource BoolToVisibility}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Background="{StaticResource AccentBrush}" Style="{StaticResource BadgeBorder}"
+                            VerticalAlignment="Center" Margin="0,0,10,0">
+                        <TextBlock Text="NOVA" Foreground="{StaticResource OnAccentBrush}"
+                                   FontSize="10" FontWeight="Bold" />
+                    </Border>
+                    <TextBlock Text="{Binding UpdateTitle}" FontWeight="SemiBold" FontSize="13"
+                               Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding UpdateDetail}" Style="{StaticResource MutedText}"
+                               Margin="10,0,0,0" VerticalAlignment="Center" FontSize="12" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="Baixar atualização" Style="{StaticResource LinkButton}"
+                            Command="{Binding OpenUpdateCommand}" Margin="0,0,14,0"
+                            ToolTip="Abre a página da release no GitHub (o zip com o exe novo)." />
+                    <Button Content="Dispensar" Style="{StaticResource LinkButton}"
+                            Command="{Binding DismissUpdateCommand}"
+                            ToolTip="Esconde o aviso desta versão. A próxima que sair aparece de novo." />
+                </StackPanel>
+            </Grid>
+        </Border>
+
         <!-- Abas horizontais -->
-        <TabControl Grid.Row="3" Style="{StaticResource TopTabControl}"
+        <TabControl Grid.Row="4" Style="{StaticResource TopTabControl}"
                     SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
             <TabItem Header="Resumo" Style="{StaticResource TopTabItem}">
                 <views:SummaryView />
@@ -136,7 +170,7 @@
         </TabControl>
 
         <!-- Log da sessão -->
-        <Border Grid.Row="4" Background="{StaticResource LogBackgroundBrush}"
+        <Border Grid.Row="5" Background="{StaticResource LogBackgroundBrush}"
                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="16,8"
                 Visibility="{Binding IsLogExpanded, Converter={StaticResource BoolToVisibility}}">
             <DockPanel>
@@ -169,7 +203,7 @@
         </Border>
 
         <!-- Barra de estado -->
-        <Border Grid.Row="5" Background="{StaticResource SurfaceBrush}"
+        <Border Grid.Row="6" Background="{StaticResource SurfaceBrush}"
                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Padding="16,8">
             <Grid>
                 <Grid.ColumnDefinitions>

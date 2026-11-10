@@ -5,3 +5,4 @@ dist/
 *.user
 *.suo
 TestResults/
+config.json

@@ -93,6 +93,18 @@ aplica alterações.
 - Ponto de restauração do Windows é sempre perguntado (nunca automático). O Windows limita a um ponto a cada 24 horas.
 - Itens `Risky` nunca são recomendados, nunca entram em `--auto` e mostram a explicação completa com padrão **Não**.
 
+## Atualizações
+
+O programa consulta a última release publicada aqui no GitHub **ao abrir** — no máximo uma
+vez por dia, sem travar a janela e **sem caixa de diálogo**: se existir versão nova, aparece
+uma faixa discreta no topo com o link para baixar.
+
+- **Verificar sozinho ao abrir** (aba *Resumo* → cartão *Atualizações*) liga/desliga a consulta;
+- **Verificar agora** consulta na hora e mostra o resultado no próprio cartão;
+- **Dispensar** esconde só aquela versão — a próxima que sair aparece de novo.
+
+Nada é baixado nem executado automaticamente. Sem internet, a verificação falha em silêncio.
+
 ## Mitigações de CPU (Spectre/Meltdown/MDS...)
 
 Baseado no KB4073119. O programa só mexe em:

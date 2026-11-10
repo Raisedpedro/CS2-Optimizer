@@ -23,6 +23,9 @@ internal static class AppPaths
 
     public static string WindowPlacementFile => Path.Combine(BaseDirectory, "janela.json");
 
+    /// <summary>Preferências do usuário (hoje: verificação de atualização).</summary>
+    public static string SettingsFile => Path.Combine(BaseDirectory, "config.json");
+
     /// <summary>Cria a pasta (idempotente) e devolve o caminho, para encadear.</summary>
     public static string EnsureDirectory(string path)
     {
