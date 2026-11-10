@@ -1,0 +1,151 @@
+<UserControl x:Class="CS2Optimizer.App.Views.FixesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <CollectionViewSource x:Key="GroupedFixes" Source="{Binding Fixes}">
+            <CollectionViewSource.GroupDescriptions>
+                <PropertyGroupDescription PropertyName="Category" />
+            </CollectionViewSource.GroupDescriptions>
+        </CollectionViewSource>
+    </UserControl.Resources>
+
+    <Grid Margin="28">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,14">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Row="0">
+                <TextBlock Text="Correções" Style="{StaticResource TitleText}" />
+                <TextBlock Style="{StaticResource SubtitleText}" Margin="0,4,0,0"
+                           Text="Lista agrupada por categoria. Marque o que deseja aplicar ou use as recomendadas. O painel à direita mostra o que faz, o risco e como voltar." />
+            </StackPanel>
+            <WrapPanel Grid.Row="1" HorizontalAlignment="Right" Margin="0,8,0,0">
+                <Button Content="Selecionar recomendadas" Style="{StaticResource SecondaryButton}"
+                        Command="{Binding SelectRecommendedCommand}" Margin="0,0,8,0" />
+                <Button Content="Limpar seleção" Style="{StaticResource SecondaryButton}"
+                        Command="{Binding ClearSelectionCommand}" Margin="0,0,8,0" />
+                <Button Content="{Binding SelectedCountText}"
+                        Style="{StaticResource PrimaryButton}" Command="{Binding ApplySelectedCommand}" />
+            </WrapPanel>
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.45*" />
+                <ColumnDefinition Width="1*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource CardBorder}" Padding="8" Margin="0,0,12,0">
+                <Grid>
+                    <ListBox ItemsSource="{Binding Source={StaticResource GroupedFixes}}"
+                         SelectedItem="{Binding SelectedFix, Mode=TwoWay}"
+                         Style="{StaticResource BaseListBox}"
+                         ItemContainerStyle="{StaticResource BaseListBoxItem}"
+                         VirtualizingPanel.IsVirtualizing="True">
+                    <ListBox.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.HeaderTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Name}" Style="{StaticResource SectionTitle}"
+                                               Margin="4,14,0,6" />
+                                </DataTemplate>
+                            </GroupStyle.HeaderTemplate>
+                        </GroupStyle>
+                    </ListBox.GroupStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource SelectableCard}" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox Grid.Column="0" Style="{StaticResource BaseCheckBox}"
+                                              IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              VerticalAlignment="Top" Margin="0,2,10,0" />
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding CurrentState}" Style="{StaticResource MutedText}"
+                                                   Margin="0,2,0,0" />
+                                        <TextBlock Text="{Binding Detail}" FontSize="12" Margin="0,5,0,0"
+                                                   Foreground="{StaticResource MutedTextBrush}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Margin="12,0,0,0" HorizontalAlignment="Right">
+                                        <Border Background="{Binding LevelBrush}" Style="{StaticResource BadgeBorder}">
+                                            <TextBlock Text="{Binding LevelDisplay}" Foreground="{StaticResource OnAccentBrush}"
+                                                       FontSize="11" FontWeight="SemiBold" />
+                                        </Border>
+                                        <TextBlock Text="{Binding RecommendedText}" Style="{StaticResource MutedText}"
+                                                   HorizontalAlignment="Center" Margin="0,4,0,0" />
+                                        <TextBlock Text="{Binding RebootText}" Style="{StaticResource MutedText}"
+                                                   HorizontalAlignment="Center" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="400"
+                                Visibility="{Binding HasNoFixes, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="Nenhuma correção carregada" Style="{StaticResource SectionTitle}"
+                                   HorizontalAlignment="Center" FontSize="15" />
+                        <TextBlock Style="{StaticResource MutedText}" Margin="0,8,0,0" TextAlignment="Center"
+                                   Text="A leitura da máquina ainda não trouxe resultados. Use &quot;Reler a máquina&quot; no topo ou o botão da aba Diagnóstico." />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource CardBorder}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="{Binding SelectedFix.Title, TargetNullValue=Selecione uma correção}"
+                                   Style="{StaticResource TitleText}" FontSize="20" />
+                        <WrapPanel Margin="0,10,0,0">
+                            <Border Background="{Binding SelectedFix.LevelBrush}" Style="{StaticResource BadgeBorder}">
+                                <TextBlock Text="{Binding SelectedFix.LevelDisplay}"
+                                           Foreground="{StaticResource OnAccentBrush}" FontSize="11" FontWeight="SemiBold" />
+                            </Border>
+                            <Border Style="{StaticResource BadgeBorder}">
+                                <TextBlock Text="{Binding SelectedFix.Category}" FontSize="11" />
+                            </Border>
+                            <Border Style="{StaticResource BadgeBorder}"
+                                    Visibility="{Binding SelectedFix.HasReboot, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="exige reinício" FontSize="11" />
+                            </Border>
+                            <Border Style="{StaticResource BadgeBorder}"
+                                    Visibility="{Binding SelectedFix.IsRecommended, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="recomendada" FontSize="11" Foreground="{StaticResource SafeBrush}" />
+                            </Border>
+                        </WrapPanel>
+
+                        <TextBlock Text="Estado atual" Style="{StaticResource SectionTitle}" Margin="0,18,0,4" />
+                        <TextBlock Text="{Binding SelectedFix.CurrentState}" Foreground="{StaticResource MutedTextBrush}" />
+
+                        <TextBlock Text="O que faz" Style="{StaticResource SectionTitle}" Margin="0,18,0,4" />
+                        <TextBlock Text="{Binding SelectedFix.Detail}" LineHeight="20" />
+
+                        <TextBlock Text="Explicação completa: ganho esperado, risco e como volta"
+                                   Style="{StaticResource SectionTitle}" Margin="0,18,0,4" />
+                        <TextBlock Text="{Binding SelectedFix.Explanation}" LineHeight="20" />
+
+                        <Border Background="{StaticResource AccentSoftBrush}" CornerRadius="6" Padding="12"
+                                Margin="0,18,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Como desfazer" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource MutedText}" Margin="0,4,0,0"
+                                           Text="Cada valor alterado entra no journal do backup. Na aba Backups / Desfazer, restaure a pasta da sessão para devolver os valores anteriores e apagar o que o programa criou." />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

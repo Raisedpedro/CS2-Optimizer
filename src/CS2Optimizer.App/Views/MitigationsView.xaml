@@ -1,0 +1,157 @@
+<UserControl x:Class="CS2Optimizer.App.Views.MitigationsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="28">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,14">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Row="0">
+                <TextBlock Text="Mitigações de CPU" Style="{StaticResource TitleText}" />
+                <TextBlock Style="{StaticResource SubtitleText}" Margin="0,4,0,0"
+                           Text="Spectre/Meltdown/MDS e outras mitigações (KB4073119). Voltar ao padrão APAGA as chaves de sobrescrita; o efeito só vale após reiniciar." />
+            </StackPanel>
+            <WrapPanel Grid.Row="1" HorizontalAlignment="Right" Margin="0,8,0,0">
+                <Button Content="Limpar seleção" Style="{StaticResource SecondaryButton}"
+                        Command="{Binding ClearMitigationSelectionCommand}" Margin="0,0,8,0" />
+                <Button Content="Ver padrão do Windows" Style="{StaticResource SecondaryButton}"
+                        Command="{Binding ShowWindowsDefaultCommand}" Margin="0,0,8,0" />
+                <Button Content="Voltar ao padrão" Style="{StaticResource DangerButton}"
+                        Command="{Binding ResetMitigationsCommand}" Margin="0,0,8,0" />
+                <Button Content="{Binding SelectedMitigationCountText}"
+                        Style="{StaticResource PrimaryButton}" Command="{Binding ApplyMitigationsCommand}" />
+            </WrapPanel>
+        </Grid>
+
+        <!-- coluna esquerda: só a lista; coluna direita: estado do registro + detalhe do perfil -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.1*" />
+                <ColumnDefinition Width="1*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Lista de perfis -->
+            <Border Grid.Column="0" Style="{StaticResource CardBorder}" Padding="8" Margin="0,0,12,0">
+                <Grid>
+                    <ListBox ItemsSource="{Binding Mitigations}"
+                         SelectedItem="{Binding SelectedMitigation, Mode=TwoWay}"
+                         Style="{StaticResource BaseListBox}"
+                         ItemContainerStyle="{StaticResource BaseListBoxItem}"
+                         VirtualizingPanel.IsVirtualizing="True">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource SelectableCard}" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox Grid.Column="0" Style="{StaticResource BaseCheckBox}"
+                                              IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              IsEnabled="{Binding IsCompatible}"
+                                              VerticalAlignment="Top" Margin="0,2,10,0" />
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Summary}" Style="{StaticResource MutedText}"
+                                                   Margin="0,3,0,0" />
+                                        <WrapPanel Margin="0,6,0,0">
+                                            <Border Background="{Binding SecurityBrush}" Style="{StaticResource BadgeBorder}">
+                                                <TextBlock Text="{Binding SecurityDisplay}"
+                                                           Foreground="{StaticResource OnAccentBrush}" FontSize="11"
+                                                           FontWeight="SemiBold" />
+                                            </Border>
+                                            <TextBlock Text="{Binding AppliesToText}" Style="{StaticResource MutedText}"
+                                                       VerticalAlignment="Center" />
+                                        </WrapPanel>
+                                        <TextBlock Text="{Binding BlockReason}" Foreground="{StaticResource RiskyBrush}"
+                                                   FontSize="11" Margin="0,4,0,0"
+                                                   Visibility="{Binding IsBlocked, Converter={StaticResource BoolToVisibility}}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="400"
+                                Visibility="{Binding HasNoMitigations, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="Nenhum perfil carregado" Style="{StaticResource SectionTitle}"
+                                   HorizontalAlignment="Center" FontSize="15" />
+                        <TextBlock Style="{StaticResource MutedText}" Margin="0,8,0,0" TextAlignment="Center"
+                                   Text="A leitura da máquina ainda não trouxe o estado das mitigações. Use &quot;Reler a máquina&quot; para carregar." />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Painel direito: estado atual (topo) + detalhe do perfil selecionado (baixo) -->
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Estado do registro -->
+                <Border Grid.Row="0" Style="{StaticResource CardBorder}" Margin="0,0,0,12" Padding="16">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="Sobrescritas no registro"
+                                   Style="{StaticResource SectionTitle}" Margin="0,0,0,8" />
+                        <TextBlock DockPanel.Dock="Bottom" Style="{StaticResource MutedText}" Margin="0,8,0,0" FontSize="12"
+                                   Text="Perfis REDUZEM proteção são tratados como inseguros (confirmação com padrão Não). Perfis que AUMENTAM custam desempenho." />
+                        <ScrollViewer Height="170" VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Auto">
+                            <TextBlock Text="{Binding MitigationStateText}" Style="{StaticResource MonoText}"
+                                       FontSize="12" />
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+
+                <!-- Detalhe do perfil selecionado -->
+                <Border Grid.Row="1" Style="{StaticResource CardBorder}" Padding="16">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="{Binding SelectedMitigation.Name, FallbackValue=Selecione um perfil}"
+                                       Style="{StaticResource TitleText}" FontSize="19" />
+                            <WrapPanel Margin="0,10,0,0">
+                                <Border Background="{Binding SelectedMitigation.SecurityBrush}" Style="{StaticResource BadgeBorder}">
+                                    <TextBlock Text="{Binding SelectedMitigation.SecurityDisplay}"
+                                               Foreground="{StaticResource OnAccentBrush}" FontSize="11" FontWeight="SemiBold" />
+                                </Border>
+                                <Border Style="{StaticResource BadgeBorder}">
+                                    <TextBlock Text="{Binding SelectedMitigation.AppliesToText}" FontSize="11" />
+                                </Border>
+                            </WrapPanel>
+
+                            <TextBlock Text="{Binding SelectedMitigation.Summary}" Style="{StaticResource MutedText}"
+                                       Margin="0,12,0,0" />
+                            <TextBlock Text="{Binding SelectedMitigationExplanation}" LineHeight="20" Margin="0,14,0,0"
+                                       FontSize="13" />
+
+                            <Border Background="#3A1820" CornerRadius="8" Padding="12" Margin="0,14,0,0"
+                                    Visibility="{Binding SelectedMitigation.IsReduced, Converter={StaticResource BoolToVisibility}}">
+                                <StackPanel>
+                                    <TextBlock Text="Proteção MENOR que o padrão" Foreground="{StaticResource RiskyBrush}"
+                                               FontWeight="SemiBold" FontSize="13" />
+                                    <TextBlock Style="{StaticResource MutedText}" Margin="0,4,0,0" FontSize="12"
+                                               Text="Só use em PC dedicado a jogo, sem dados sensíveis, e meça o FPS antes e depois." />
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="{StaticResource AccentSoftBrush}" CornerRadius="8" Padding="12" Margin="0,14,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Como desfazer" FontWeight="SemiBold" FontSize="13" />
+                                    <TextBlock Style="{StaticResource MutedText}" Margin="0,4,0,0" FontSize="12"
+                                               Text="Voltar ao padrão apaga FeatureSettingsOverride, Mask e MinVm. O journal do backup também devolve o estado anterior. Reinicie para valer." />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>

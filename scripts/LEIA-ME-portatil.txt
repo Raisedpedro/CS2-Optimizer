@@ -1,0 +1,42 @@
+﻿CS2 / Windows Optimizer - versao portatil
+=========================================
+
+O que tem nesta pasta
+---------------------
+  CS2Optimizer.exe   o programa (autocontido: nao precisa instalar .NET)
+  Backups\           onde o programa guarda os backups ANTES de alterar algo
+  logs\              criada na primeira execucao, com o log de cada sessao
+  LEIA-ME.txt        este arquivo
+
+Como usar
+---------
+1. Extraia TODO o zip para uma pasta sua, por exemplo C:\CS2Optimizer.
+   Nao execute o .exe de dentro do zip (o Windows abre em pasta temporaria
+   e a pasta Backups se perde).
+2. De dois cliques em CS2Optimizer.exe e aceite o pedido de administrador
+   (o programa precisa disso para escrever no registro).
+3. Use "Reler a maquina" e depois "Aplicar recomendadas".
+4. Para desfazer: aba "Backups / Desfazer" -> escolha o backup -> Restaurar.
+
+Onde ficam os arquivos
+----------------------
+Tudo fica junto do CS2Optimizer.exe:
+  Backups\CS2-Optimizer-Backup-<data-hora>\   .reg, bcd.bak, powerscheme.txt, journal.json
+  logs\CS2-Optimizer-Log-<data-hora>.txt      log da sessao
+  janela.json                                 tamanho/posicao da janela
+
+Se a pasta do programa nao aceitar escrita (por exemplo, se voce copiar para
+"Arquivos de Programas"), o programa cria essas pastas em
+%LOCALAPPDATA%\CS2-Optimizer no lugar. O caminho usado aparece na aba
+"Diagnostico" e na aba "Backups".
+
+Aviso do Windows
+----------------
+O executavel nao tem assinatura digital, entao o SmartScreen pode avisar na
+primeira execucao. Clique em "Mais informacoes" -> "Executar assim mesmo".
+
+Seguranca
+---------
+O programa nunca aplica nada sem confirmacao, cria backup antes de escrever e
+recusa arquivos .reg fora do padrao. Ainda assim: meca FPS antes e depois e
+leia a explicacao de cada item.

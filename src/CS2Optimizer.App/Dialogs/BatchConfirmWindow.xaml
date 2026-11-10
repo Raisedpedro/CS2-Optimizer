@@ -1,0 +1,57 @@
+<Window x:Class="CS2Optimizer.App.Dialogs.BatchConfirmWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Confirmar alterações" Width="720" Height="560" MinWidth="600" MinHeight="420"
+        WindowStartupLocation="CenterOwner" Icon="pack://application:,,,/CS2Optimizer;component/Assets/icone.ico" ShowInTaskbar="False"
+        Background="{StaticResource WindowBackgroundBrush}">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock Text="Confirme o que será alterado" Style="{StaticResource TitleText}" FontSize="20" />
+            <TextBlock Style="{StaticResource SubtitleText}" Margin="0,4,0,0"
+                       Text="O programa cria um backup completo antes de gravar. Nada é alterado sem a sua confirmação." />
+        </StackPanel>
+
+        <Border Grid.Row="1" Style="{StaticResource CardBorder}" Padding="8">
+            <ListBox ItemsSource="{Binding Fixes}" Style="{StaticResource BaseListBox}"
+                     ItemContainerStyle="{StaticResource BaseListBoxItem}">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource SelectableCard}" Margin="0,0,0,6">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding CurrentState}" Style="{StaticResource MutedText}"
+                                               Margin="0,2,0,0" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                                    <Border Background="{Binding LevelBrush}" Style="{StaticResource BadgeBorder}">
+                                        <TextBlock Text="{Binding LevelDisplay}" Foreground="{StaticResource OnAccentBrush}"
+                                                   FontSize="11" FontWeight="SemiBold" />
+                                    </Border>
+                                    <TextBlock Text="{Binding RebootText}" Style="{StaticResource MutedText}"
+                                               HorizontalAlignment="Center" Margin="0,4,0,0" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Border>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button x:Name="CancelButton" Content="Cancelar" Style="{StaticResource SecondaryButton}"
+                    Margin="0,0,8,0" Click="Cancel_Click" />
+            <Button Content="Aplicar agora" Style="{StaticResource PrimaryButton}" Click="Apply_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

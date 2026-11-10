@@ -1,0 +1,382 @@
+<UserControl x:Class="CS2Optimizer.App.Views.SummaryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,24,28,32" MaxWidth="1520" HorizontalAlignment="Stretch">
+
+            <!-- Cabeçalho do painel (as ações ficam no topo da janela, uma vez só) -->
+            <StackPanel Margin="0,0,0,18">
+                <TextBlock Text="PAINEL DE CONTROLE" Style="{StaticResource EyebrowText}" />
+                <TextBlock Text="Sua máquina, pronta para o CS2" Style="{StaticResource TitleText}"
+                           Margin="0,6,0,0" />
+                <TextBlock Style="{StaticResource SubtitleText}" Margin="0,6,0,0" MaxWidth="860"
+                           HorizontalAlignment="Left"
+                           Text="Tudo começa no botão Aplicar recomendadas, no topo da janela: ele lê a máquina e aplica só o que é recomendado — correções e ajustes do O&amp;O sugeridos para CS2 — em um único passo. Nada é alterado sem confirmação e tudo pode ser desfeito em Backups / Desfazer." />
+            </StackPanel>
+
+            <!-- Cartão principal: resumo + saúde -->
+            <Border Style="{StaticResource CardBorder}" Padding="26" Margin="0,0,0,16"
+                    BorderBrush="{StaticResource AccentLineBrush}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="240" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,24,0">
+                        <TextBlock Text="RESUMO DA LEITURA" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding RecommendedSummary}" FontSize="23" FontWeight="SemiBold"
+                                   Margin="0,8,0,0" />
+                        <TextBlock Style="{StaticResource MutedText}" Margin="0,8,0,0" MaxWidth="760"
+                                   HorizontalAlignment="Left"
+                                   Text="Aplicar recomendadas soma duas coisas: as correções marcadas como recomendadas e os ajustes do O&amp;O ShutUp10 sugeridos para CS2 que ainda estão inativos. Ficam de fora os itens opcionais, os de risco e os marcados como &quot;evitar&quot;." />
+
+                        <Grid Margin="0,18,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Saúde do sistema" Style="{StaticResource CardTitle}"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Style="{StaticResource MutedText}" FontSize="12"
+                                       VerticalAlignment="Center">
+                                <Run Text="{Binding HealthScoreDisplay, Mode=OneWay}" />
+                                <Run Text="/ 100" />
+                            </TextBlock>
+                        </Grid>
+                        <ProgressBar Height="6" Margin="0,7,0,0" Maximum="100"
+                                     Value="{Binding HealthScoreBar, Mode=OneWay}"
+                                     Foreground="{Binding HealthScoreBrush}"
+                                     Style="{StaticResource KuduProgressBar}" />
+
+                        <TextBlock Text="{Binding StatusDetail}" Style="{StaticResource MutedText}"
+                                   Margin="0,12,0,0" />
+                    </StackPanel>
+
+                    <Border Grid.Column="1" Background="{StaticResource AccentSoftBrush}"
+                            BorderBrush="{StaticResource AccentLineBrush}" BorderThickness="1"
+                            CornerRadius="16" Padding="18">
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding HealthScoreDisplay}" FontSize="56" FontWeight="SemiBold"
+                                       Foreground="{Binding HealthScoreBrush}" HorizontalAlignment="Center" />
+                            <TextBlock Text="de 100" Style="{StaticResource MutedText}" FontSize="11"
+                                       HorizontalAlignment="Center" Margin="0,-6,0,0" />
+                            <TextBlock Text="{Binding HealthScoreLabel}" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{Binding HealthScoreBrush}" HorizontalAlignment="Center"
+                                       Margin="0,10,0,0" />
+                            <Border Height="1" Background="{StaticResource BorderBrush}" Margin="0,14,0,10" />
+                            <TextBlock Text="{Binding LastScanDisplay}" Style="{StaticResource MutedText}"
+                                       FontSize="11" HorizontalAlignment="Center" TextAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- Indicadores rápidos -->
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0" Style="{StaticResource CardButton}" Margin="0,0,12,0"
+                        Command="{Binding ShowTabCommand}" CommandParameter="correcoes">
+                    <StackPanel>
+                        <TextBlock Text="CORREÇÕES RECOMENDADAS" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding RecommendedCount}" FontSize="32" FontWeight="SemiBold"
+                                   Margin="0,8,0,0" Foreground="{StaticResource AccentBrush}" />
+                        <TextBlock Style="{StaticResource MutedText}" FontSize="12" Margin="0,2,0,0">
+                            <Run Text="de " /><Run Text="{Binding FixCount, Mode=OneWay}" /><Run Text=" aplicáveis" />
+                        </TextBlock>
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="1" Style="{StaticResource CardButton}" Margin="0,0,12,0"
+                        Command="{Binding ShowTabCommand}" CommandParameter="oosu10">
+                    <StackPanel>
+                        <TextBlock Text="O&amp;O SHUTUP10 ATIVOS" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding Oosu10ActiveCount}" FontSize="32" FontWeight="SemiBold"
+                                   Margin="0,8,0,0" Foreground="{StaticResource SafeBrush}" />
+                        <TextBlock Style="{StaticResource MutedText}" FontSize="12" Margin="0,2,0,0">
+                            <Run Text="de " /><Run Text="{Binding Oosu10Tweaks.Count, Mode=OneWay}" /><Run Text=" ajustes" />
+                        </TextBlock>
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="2" Style="{StaticResource CardButton}" Margin="0,0,12,0"
+                        Command="{Binding ShowTabCommand}" CommandParameter="mitigacoes">
+                    <StackPanel>
+                        <TextBlock Text="MITIGAÇÕES DE CPU" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding MitigationSummary}" FontSize="20" FontWeight="SemiBold"
+                                   Margin="0,10,0,0" Foreground="{Binding MitigationSummaryBrush}" />
+                        <TextBlock Text="Spectre / Meltdown / MDS" Style="{StaticResource MutedText}"
+                                   FontSize="12" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Button>
+
+                <Button Grid.Column="3" Style="{StaticResource CardButton}"
+                        Command="{Binding ShowTabCommand}" CommandParameter="diagnostico">
+                    <StackPanel>
+                        <TextBlock Text="PONTOS DE ATENÇÃO" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding ProblemCount}" FontSize="32" FontWeight="SemiBold"
+                                   Margin="0,8,0,0" Foreground="{StaticResource RiskyBrush}" />
+                        <TextBlock Text="{Binding ProblemCountText}" Style="{StaticResource MutedText}"
+                                   FontSize="12" Margin="0,2,0,0" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- Pendentes + histórico da sessão -->
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.15*" />
+                    <ColumnDefinition Width="1*" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Style="{StaticResource CardBorder}" Padding="18" Margin="0,0,12,0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0" Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Alterações pendentes" Style="{StaticResource SectionTitle}" />
+                                <TextBlock Text="{Binding PendingCountText}" Style="{StaticResource MutedText}"
+                                           FontSize="12" Margin="0,2,0,0" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="Limpar tudo" Style="{StaticResource LinkButton}"
+                                    Command="{Binding ClearPendingCommand}" VerticalAlignment="Center" />
+                        </Grid>
+
+                        <Grid Grid.Row="1">
+                            <ScrollViewer MaxHeight="250" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding PendingChanges}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Style="{StaticResource GhostCard}" Padding="10" Margin="0,0,0,8">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border Grid.Column="0" Background="{Binding BadgeBrush}"
+                                                            Style="{StaticResource BadgeBorder}"
+                                                            VerticalAlignment="Top" Margin="0,0,10,0">
+                                                        <TextBlock Text="{Binding Badge}"
+                                                                   Foreground="{StaticResource OnAccentBrush}"
+                                                                   FontSize="10" FontWeight="SemiBold" />
+                                                    </Border>
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock Text="{Binding Title}" FontSize="13"
+                                                                   FontWeight="SemiBold" />
+                                                        <TextBlock Text="{Binding Kind}" Style="{StaticResource MutedText}"
+                                                                   FontSize="11" Margin="0,2,0,0" />
+                                                    </StackPanel>
+                                                    <Button Grid.Column="2" Content="{Binding TargetTabText}"
+                                                            Style="{StaticResource LinkButton}"
+                                                            VerticalAlignment="Center"
+                                                            Command="{Binding DataContext.ShowTabCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding TargetTab}" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="380"
+                                        Visibility="{Binding HasNoPendingChanges, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="Nada selecionado ainda" Style="{StaticResource SectionTitle}"
+                                           HorizontalAlignment="Center" FontSize="14" />
+                                <TextBlock Style="{StaticResource MutedText}" Margin="0,6,0,0"
+                                           TextAlignment="Center"
+                                           Text="Marque itens nas abas Correções, Mitigações ou O&amp;O ShutUp10. Eles aparecem aqui antes de qualquer alteração." />
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Column="1" Style="{StaticResource CardBorder}" Padding="18">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Margin="0,0,0,10">
+                            <TextBlock Text="Histórico desta sessão" Style="{StaticResource SectionTitle}" />
+                            <TextBlock Text="O que foi aplicado ou revertido desde que o programa abriu."
+                                       Style="{StaticResource MutedText}" FontSize="12" Margin="0,2,0,0" />
+                        </StackPanel>
+
+                        <Grid Grid.Row="1">
+                            <ScrollViewer MaxHeight="250" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding SessionChanges}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Style="{StaticResource GhostCard}" Padding="10" Margin="0,0,0,8">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                                        <Border Background="{Binding ActionBrush}"
+                                                                Style="{StaticResource BadgeBorder}" Margin="0,0,0,4">
+                                                            <TextBlock Text="{Binding Action}"
+                                                                       Foreground="{StaticResource OnAccentBrush}"
+                                                                       FontSize="10" FontWeight="SemiBold" />
+                                                        </Border>
+                                                        <TextBlock Text="{Binding TimeText}"
+                                                                   Style="{StaticResource MutedText}"
+                                                                   FontSize="10" HorizontalAlignment="Center" />
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock Text="{Binding Summary}" FontSize="13"
+                                                                   FontWeight="SemiBold" />
+                                                        <TextBlock Text="{Binding Detail}" Style="{StaticResource MutedText}"
+                                                                   FontSize="11" Margin="0,2,0,0"
+                                                                   Visibility="{Binding HasDetail, Converter={StaticResource BoolToVisibility}}" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="340"
+                                        Visibility="{Binding HasNoSessionChanges, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock Text="Nenhuma alteração ainda" Style="{StaticResource SectionTitle}"
+                                           HorizontalAlignment="Center" FontSize="14" />
+                                <TextBlock Style="{StaticResource MutedText}" Margin="0,6,0,0"
+                                           TextAlignment="Center"
+                                           Text="Quando você aplicar ou reverter algo, o resultado aparece aqui com horário e resumo." />
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- Lógica de uso -->
+            <Border Style="{StaticResource CardBorder}" Margin="0,0,0,16" Padding="20">
+                <StackPanel>
+                    <TextBlock Text="Como usar (3 passos)" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Style="{StaticResource MutedText}" Margin="0,4,0,0"
+                               Text="O programa sempre lê antes de agir. Nada é aplicado sem confirmação e tudo pode ser desfeito em Backups / Desfazer." />
+                    <Grid Margin="0,16,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="0,0,18,0">
+                            <Border Style="{StaticResource StepBadge}" HorizontalAlignment="Left">
+                                <TextBlock Text="1" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <TextBlock Text="Ler a máquina" FontWeight="SemiBold" Margin="0,8,0,0" />
+                            <TextBlock Text="{Binding Step1Detail}" Style="{StaticResource MutedText}"
+                                       FontSize="12" Margin="0,3,0,0" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Margin="0,0,18,0">
+                            <Border Style="{StaticResource StepBadge}" HorizontalAlignment="Left">
+                                <TextBlock Text="2" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <TextBlock Text="Revisar e selecionar" FontWeight="SemiBold" Margin="0,8,0,0" />
+                            <TextBlock Text="{Binding Step2Detail}" Style="{StaticResource MutedText}"
+                                       FontSize="12" Margin="0,3,0,0" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <Border Style="{StaticResource StepBadge}" HorizontalAlignment="Left">
+                                <TextBlock Text="3" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <TextBlock Text="Aplicar e reiniciar" FontWeight="SemiBold" Margin="0,8,0,0" />
+                            <TextBlock Text="{Binding Step3Detail}" Style="{StaticResource MutedText}"
+                                       FontSize="12" Margin="0,3,0,0" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Ficha da máquina -->
+            <TextBlock Text="Ficha da máquina" Style="{StaticResource SectionTitle}" Margin="0,4,0,10" />
+            <WrapPanel Margin="0,0,0,4">
+                <Border Style="{StaticResource CardBorder}" Width="350" Margin="0,0,12,12" Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="SISTEMA" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding OsText}" Style="{StaticResource CardValue}" Margin="0,6,0,0" />
+                        <TextBlock Text="{Binding OsDetail}" Style="{StaticResource MutedText}" Margin="0,4,0,0" />
+                        <TextBlock Text="{Binding MachineTitle}" Style="{StaticResource MutedText}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource CardBorder}" Width="350" Margin="0,0,12,12" Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="CPU" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding CpuText}" Style="{StaticResource CardValue}" Margin="0,6,0,0" />
+                        <TextBlock Text="{Binding CpuDetail}" Style="{StaticResource MutedText}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource CardBorder}" Width="350" Margin="0,0,12,12" Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="MEMÓRIA RAM" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding RamText}" Style="{StaticResource CardValue}" Margin="0,6,0,0" />
+                        <TextBlock Text="{Binding RamDetail}" Style="{StaticResource MutedText}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource CardBorder}" Width="350" Margin="0,0,12,12" Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="GPU / VÍDEO" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding GpuText}" Style="{StaticResource CardValue}" Margin="0,6,0,0" />
+                        <TextBlock Text="{Binding GpuDetail}" Style="{StaticResource MutedText}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource CardBorder}" Width="350" Margin="0,0,12,12" Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="CS2 / STEAM" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding Cs2Text}" Style="{StaticResource CardValue}" Margin="0,6,0,0" />
+                        <TextBlock Text="{Binding Cs2Detail}" Style="{StaticResource MutedText}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource CardBorder}" Width="350" Margin="0,0,12,12" Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="ARMAZENAMENTO" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding StorageText}" Style="{StaticResource CardValue}" Margin="0,6,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource CardBorder}" Width="350" Margin="0,0,12,12" Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="MITIGAÇÕES DE CPU" Style="{StaticResource CardTitle}" />
+                        <TextBlock Text="{Binding MitigationSummary}" Style="{StaticResource CardValue}"
+                                   Foreground="{Binding MitigationSummaryBrush}" Margin="0,6,0,0" />
+                        <TextBlock Text="{Binding PowerText}" Style="{StaticResource MutedText}" Margin="0,4,0,0" />
+                        <TextBlock Text="{Binding HvciText}" Style="{StaticResource MutedText}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </Border>
+            </WrapPanel>
+
+            <TextBlock Text="{Binding LastScanLabel}" Style="{StaticResource MutedText}"
+                       Margin="0,14,0,0" FontSize="12" />
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

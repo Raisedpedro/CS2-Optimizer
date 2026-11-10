@@ -1,0 +1,111 @@
+<UserControl x:Class="CS2Optimizer.App.Views.BackupsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="28">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,14">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <StackPanel Grid.Row="0">
+                <TextBlock Text="Backups / Desfazer" Style="{StaticResource TitleText}" />
+                <TextBlock Style="{StaticResource SubtitleText}" Margin="0,4,0,0"
+                           Text="Cada aplicação cria uma pasta com .reg, BCD, plano de energia e journal. Restaurar devolve os valores anteriores e apaga o que o programa criou. Arquivos .reg fora do padrão são recusados." />
+            </StackPanel>
+            <WrapPanel Grid.Row="1" HorizontalAlignment="Right" Margin="0,8,0,0">
+                <Button Content="Atualizar" Style="{StaticResource SecondaryButton}"
+                        Command="{Binding RefreshBackupsCommand}" Margin="0,0,8,0" />
+                <Button Content="Restaurar de pasta..." Style="{StaticResource SecondaryButton}"
+                        Command="{Binding RestoreFromFolderCommand}" Margin="0,0,8,0" />
+                <Button Content="Abrir pasta" Style="{StaticResource SecondaryButton}"
+                        Command="{Binding OpenBackupFolderCommand}" />
+            </WrapPanel>
+        </Grid>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.5*" />
+                <ColumnDefinition Width="1*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource CardBorder}" Padding="8" Margin="0,0,12,0">
+                <Grid>
+                    <ListBox ItemsSource="{Binding Backups}" SelectedItem="{Binding SelectedBackup, Mode=TwoWay}"
+                             Style="{StaticResource BaseListBox}" ItemContainerStyle="{StaticResource BaseListBoxItem}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Style="{StaticResource SelectableCard}" Margin="0,0,0,8">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                        <TextBlock Style="{StaticResource MutedText}" Margin="0,2,0,0">
+                                            <Run Text="Última gravação: " /><Run Text="{Binding LastWriteDisplay, Mode=OneWay}" />
+                                        </TextBlock>
+                                        <TextBlock Style="{StaticResource MutedText}" Text="{Binding Summary}" />
+                                        <TextBlock Style="{StaticResource MutedText}" FontFamily="Consolas" FontSize="11"
+                                                   Text="{Binding Path}" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="420"
+                                Visibility="{Binding HasNoBackups, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="Nenhum backup ainda" Style="{StaticResource SectionTitle}"
+                                   HorizontalAlignment="Center" />
+                        <TextBlock Style="{StaticResource MutedText}" Margin="0,8,0,0" TextAlignment="Center"
+                                   TextWrapping="Wrap"
+                                   Text="Nada foi alterado nesta máquina. Antes da primeira aplicação, o programa cria uma pasta com .reg, BCD, plano de energia e journal. Você também pode restaurar um backup já existente de outra pasta." />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource CardBorder}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="{Binding SelectedBackup.Name, FallbackValue=Selecione um backup}"
+                                   Style="{StaticResource TitleText}" FontSize="20" />
+
+                        <TextBlock Style="{StaticResource MutedText}" Margin="0,8,0,0"
+                                   Visibility="{Binding HasNoBackups, Converter={StaticResource BoolToVisibility}}"
+                                   TextWrapping="Wrap"
+                                   Text="Escolha um backup na lista à esquerda para ver os detalhes e restaurar. Se você tem um backup em outra pasta, use Restaurar de pasta." />
+
+                        <StackPanel Visibility="{Binding HasSelectedBackup, Converter={StaticResource BoolToVisibility}}">
+                            <TextBlock Style="{StaticResource MutedText}" Margin="0,6,0,0">
+                                <Run Text="Última gravação: " /><Run Text="{Binding SelectedBackup.LastWriteDisplay, Mode=OneWay}" />
+                            </TextBlock>
+                            <TextBlock Style="{StaticResource MutedText}" Text="{Binding SelectedBackup.Summary}" />
+
+                            <TextBlock Text="Pasta" Style="{StaticResource SectionTitle}" Margin="0,18,0,4" />
+                            <TextBlock Text="{Binding SelectedBackup.Path}" FontFamily="Consolas" FontSize="12"
+                                       TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" />
+
+                            <Button Content="Restaurar este backup" Style="{StaticResource PrimaryButton}"
+                                    HorizontalAlignment="Left" Margin="0,18,0,0"
+                                    Command="{Binding RestoreSelectedBackupCommand}" />
+                            <Button Content="Abrir esta pasta" Style="{StaticResource LinkButton}"
+                                    HorizontalAlignment="Left" Margin="0,8,0,0"
+                                    Command="{Binding OpenBackupFolderCommand}" />
+                        </StackPanel>
+
+                        <Border Background="{StaticResource AccentSoftBrush}" CornerRadius="6" Padding="12" Margin="0,18,0,0">
+                            <StackPanel>
+                                <TextBlock Text="O que o desfazer faz" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource MutedText}" Margin="0,4,0,0"
+                                           Text="Reimporta apenas .reg com cabeçalho correto e chaves que o próprio programa exporta; desfaz o journal do mais novo para o mais antigo; restaura o BCD e o plano de energia. Reinicie depois." />
+                                <TextBlock Style="{StaticResource MutedText}" Margin="0,6,0,0"
+                                           Text="O backup NÃO desfaz rede (net-reset) nem configurações do CS2 renomeadas para 730.old; esses casos exigem ação manual." />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

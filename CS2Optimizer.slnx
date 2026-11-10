@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CS2Optimizer.App/CS2Optimizer.App.csproj" />
+    <Project Path="src/CS2Optimizer.Core/CS2Optimizer.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CS2Optimizer.Tests/CS2Optimizer.Tests.csproj" />
+  </Folder>
+</Solution>

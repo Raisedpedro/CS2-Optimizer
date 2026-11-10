@@ -1,0 +1,76 @@
+name: Build e release (portátil)
+
+# Dispara ao subir uma tag vX.Y.Z (ex.: v1.0.1) ou na mão em Actions > Run workflow.
+# Gera o zip portátil e anexa no Release do GitHub.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Tag para criar/publicar (ex.: v1.0.1)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Instalar .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Testes
+        run: dotnet test tests/CS2Optimizer.Tests/CS2Optimizer.Tests.csproj -c Release --nologo
+
+      - name: Publicar portátil (autocontido, arquivo único)
+        run: >
+          dotnet publish src/CS2Optimizer.App/CS2Optimizer.App.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:DebugType=None -p:DebugSymbols=false
+          -o dist/portable
+
+      - name: Montar o zip (exe + Backups + LEIA-ME)
+        shell: pwsh
+        run: |
+          $tag = "${{ github.event.inputs.release_tag }}"
+          if ([string]::IsNullOrWhiteSpace($tag)) { $tag = "${{ github.ref_name }}" }
+          $version = $tag.TrimStart("v")
+          ./scripts/package-portable.ps1 -PortableDir dist/portable -Version $version
+
+      - name: Conferir o conteúdo do zip
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem dist/*.zip | Select-Object -First 1
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $entries = [System.IO.Compression.ZipFile]::OpenRead($zip.FullName).Entries
+          $entries | ForEach-Object { Write-Host $_.FullName }
+          if (-not ($entries | Where-Object { $_.FullName -eq "CS2Optimizer.exe" })) {
+            throw "O zip não contém CS2Optimizer.exe"
+          }
+          if (-not ($entries | Where-Object { $_.FullName -like "Backups/*" })) {
+            throw "O zip não contém a pasta Backups"
+          }
+
+      - name: Publicar o Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.release_tag || github.ref_name }}
+          name: CS2 / Windows Optimizer ${{ github.event.inputs.release_tag || github.ref_name }}
+          body: |
+            Versão portátil (Windows 10/11 x64). Baixe o `.zip`, extraia em uma pasta sua
+            (ex.: `C:\CS2Optimizer`) e rode `CS2Optimizer.exe`.
+
+            A pasta `Backups`, ao lado do executável, é onde o programa guarda o backup
+            antes de alterar qualquer coisa. O `LEIA-ME.txt` dentro do zip explica o resto.
+          files: dist/*.zip
+          fail_on_unmatched_files: true

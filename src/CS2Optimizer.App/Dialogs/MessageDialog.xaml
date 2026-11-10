@@ -1,0 +1,17 @@
+<Window x:Class="CS2Optimizer.App.Dialogs.MessageDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Aviso" SizeToContent="WidthAndHeight" MinWidth="440" MaxWidth="760"
+        WindowStartupLocation="CenterOwner" Icon="pack://application:,,,/CS2Optimizer;component/Assets/icone.ico" ResizeMode="NoResize" ShowInTaskbar="False"
+        Background="{StaticResource WindowBackgroundBrush}">
+    <Border Style="{StaticResource CardBorder}" Margin="16">
+        <StackPanel>
+            <TextBlock x:Name="TitleText" Style="{StaticResource TitleText}" FontSize="20" />
+            <ScrollViewer MaxHeight="430" Margin="0,12,0,0" VerticalScrollBarVisibility="Auto">
+                <TextBlock x:Name="MessageText" TextWrapping="Wrap" LineHeight="20" />
+            </ScrollViewer>
+            <Button Content="OK" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Right"
+                    Margin="0,22,0,0" IsDefault="True" Click="Ok_Click" />
+        </StackPanel>
+    </Border>
+</Window>
