@@ -1,6 +1,9 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media;
 
 namespace CS2Optimizer.App;
 
@@ -13,8 +16,45 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         ApplyPlacement();
+        SourceInitialized += (_, _) => ApplyDarkTitleBar();
         Closing += OnClosing;
     }
+
+    /// <summary>
+    /// Pinta a barra de título nativa de escuro. Sem isso a janela abre com a barra
+    /// clara do Windows, que destoa do resto. No Windows 11 dá para usar a cor exata
+    /// do app; em versões antigas fica só a barra escura padrão.
+    /// </summary>
+    private void ApplyDarkTitleBar()
+    {
+        try
+        {
+            var handle = new WindowInteropHelper(this).Handle;
+            if (handle == IntPtr.Zero) return;
+
+            var ligado = 1;
+            _ = DwmSetWindowAttribute(handle, 20, ref ligado, sizeof(int)); // DWMWA_USE_IMMERSIVE_DARK_MODE (20H1+)
+            _ = DwmSetWindowAttribute(handle, 19, ref ligado, sizeof(int)); // mesmo atributo em builds antigos
+
+            var titulo = ToColorRef(0x0F, 0x0F, 0x16);   // igual ao SurfaceBrush
+            _ = DwmSetWindowAttribute(handle, 35, ref titulo, sizeof(int)); // DWMWA_CAPTION_COLOR
+
+            var texto = ToColorRef(0xE4, 0xE4, 0xE7);    // igual ao TextBrush
+            _ = DwmSetWindowAttribute(handle, 36, ref texto, sizeof(int)); // DWMWA_TEXT_COLOR
+
+            var borda = ToColorRef(0x1A, 0x1A, 0x22);
+            _ = DwmSetWindowAttribute(handle, 34, ref borda, sizeof(int)); // DWMWA_BORDER_COLOR
+        }
+        catch
+        {
+            // Windows sem suporte a esses atributos: segue com a barra padrão.
+        }
+    }
+
+    private static int ToColorRef(byte r, byte g, byte b) => r | (g << 8) | (b << 16);
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
     /// <summary>
     /// Fechar no meio de um backup/aplicação pode deixar o estado pela metade.

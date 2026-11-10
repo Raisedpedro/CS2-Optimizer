@@ -93,6 +93,16 @@ aplica alterações.
 - Ponto de restauração do Windows é sempre perguntado (nunca automático). O Windows limita a um ponto a cada 24 horas.
 - Itens `Risky` nunca são recomendados, nunca entram em `--auto` e mostram a explicação completa com padrão **Não**.
 
+## Limpeza rápida
+
+Aba **Limpeza rápida**: lista os caches encontrados na máquina (TEMP, cache do
+sistema/DNS/Steam, INetCache, miniaturas do Explorer, cache de entrega do Windows
+Update) com a explicação de cada um. Tudo já vem marcado — **menos o cache de
+shaders**, que fica desmarcado de propósito: apagar obriga o CS2 a recompilar e as
+primeiras partidas travam. Ele continua ali, é só marcar se quiser.
+
+Nada é apagado sem confirmação, e nenhum arquivo pessoal entra na lista.
+
 ## Atualizações
 
 O programa consulta a última release publicada aqui no GitHub **ao abrir** — no máximo uma

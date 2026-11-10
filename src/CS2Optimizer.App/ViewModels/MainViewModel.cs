@@ -10,6 +10,7 @@ using System.Windows.Threading;
 using CS2Optimizer.App.Dialogs;
 using CS2Optimizer.Core.Diagnostics;
 using CS2Optimizer.Core.Engine;
+using CS2Optimizer.Core.Fixes;
 using CS2Optimizer.Core.Mitigations;
 using CS2Optimizer.Core.Models;
 using CS2Optimizer.Core.Oosu10;
@@ -117,6 +118,9 @@ public sealed class MainViewModel : ObservableObject
         OpenUpdateCommand = new RelayCommand(OpenUpdatePage);
         DismissUpdateCommand = new RelayCommand(DismissUpdate);
         OpenProjectPageCommand = new RelayCommand(OpenProjectPage);
+        SelectAllQuickCleanCommand = new RelayCommand(SelectAllQuickClean, () => !IsBusy && QuickClean.Count > 0);
+        ClearQuickCleanCommand = new RelayCommand(ClearQuickClean, () => !IsBusy && QuickCleanSelectedCount > 0);
+        ApplyQuickCleanCommand = new AsyncRelayCommand(ApplyQuickCleanAsync, () => !IsBusy && QuickCleanSelectedCount > 0);
         ShowTabCommand = new RelayCommand(parameter =>
             SelectedTabIndex = AppTabs.IndexOf(parameter as string));
 
@@ -151,6 +155,7 @@ public sealed class MainViewModel : ObservableObject
     public ObservableCollection<LogItemViewModel> LogItems { get; } = new();
     public ObservableCollection<PendingChangeViewModel> PendingChanges { get; } = new();
     public ObservableCollection<SessionChangeViewModel> SessionChanges { get; } = new();
+    public ObservableCollection<QuickCleanItemViewModel> QuickClean { get; } = new();
     public IReadOnlyList<string> Tips => Cs2Tips.All;
 
     public AsyncRelayCommand ScanCommand { get; }
@@ -182,6 +187,11 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand OpenUpdateCommand { get; }
     public RelayCommand DismissUpdateCommand { get; }
     public RelayCommand OpenProjectPageCommand { get; }
+
+    // ---- limpeza rápida ----
+    public RelayCommand SelectAllQuickCleanCommand { get; }
+    public RelayCommand ClearQuickCleanCommand { get; }
+    public AsyncRelayCommand ApplyQuickCleanCommand { get; }
 
     public bool IsBusy
     {
@@ -449,6 +459,17 @@ public sealed class MainViewModel : ObservableObject
 
     public int FixCount => Fixes.Count;
     public int RecommendedCount => Fixes.Count(f => f.IsRecommended);
+
+    // ---- limpeza rápida ----
+    public bool QuickCleanEmpty => QuickClean.Count == 0;
+    public int QuickCleanSelectedCount => QuickClean.Count(i => i.IsSelected);
+    public string QuickCleanSummary => QuickClean.Count == 0
+        ? "Nenhum cache encontrado para limpar."
+        : $"{QuickCleanSelectedCount} de {QuickClean.Count} cache(s) marcado(s).";
+    public string QuickCleanActionText => QuickCleanSelectedCount == 0
+        ? "Nenhum cache marcado"
+        : $"Limpar {QuickCleanSelectedCount} cache(s)";
+
     public int PendingRecommendedOosuCount =>
         Oosu10Tweaks.Count(t => t.InPreset && t.Advice != Oosu10Advice.Evitar && !t.IsActive);
     public bool HasRecommendedWork => RecommendedCount > 0 || PendingRecommendedOosuCount > 0;
@@ -846,6 +867,7 @@ public sealed class MainViewModel : ObservableObject
                 ? "Nada pendente: as correções recomendadas já estão aplicadas nesta máquina."
                 : $"{RecommendedCount} correção(ões) recomendada(s) de {FixCount} aplicável(is).";
         RefreshPendingChanges();
+        UpdateQuickClean();
         UpdateHealthScore();
         RefreshCommands();
     }
@@ -2030,6 +2052,76 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
+    // ------------------------------------------------------------------ limpeza rápida
+
+    /// <summary>Monta a lista da aba "Limpeza rápida" a partir do catálogo (categoria Limpeza).</summary>
+    private void UpdateQuickClean()
+    {
+        // Preserva o que o usuário já tinha marcado/desmarcado antes de uma releitura.
+        var marcados = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        foreach (var antigo in QuickClean) marcados[antigo.Id] = antigo.IsSelected;
+
+        foreach (var item in QuickClean) item.PropertyChanged -= OnQuickCleanItemChanged;
+        QuickClean.Clear();
+
+        foreach (var fix in Fixes)
+        {
+            var def = fix.Definition;
+            if (!string.Equals(def.Category, FixCategories.Limpeza, StringComparison.Ordinal)) continue;
+            if (string.Equals(def.Id, "trim", StringComparison.OrdinalIgnoreCase)) continue; // manutenção, não cache
+
+            // Cache de shader existe na lista mas nunca vem marcado: apagar obriga o CS2 a recompilar.
+            var selecionado = marcados.TryGetValue(def.Id, out var anterior)
+                ? anterior
+                : !string.Equals(def.Id, "shaders", StringComparison.OrdinalIgnoreCase);
+
+            var novo = new QuickCleanItemViewModel(def, selecionado);
+            novo.PropertyChanged += OnQuickCleanItemChanged;
+            QuickClean.Add(novo);
+        }
+
+        RaiseQuickCleanChanged();
+    }
+
+    private void OnQuickCleanItemChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(QuickCleanItemViewModel.IsSelected) or null)
+            RaiseQuickCleanChanged();
+    }
+
+    private void RaiseQuickCleanChanged()
+    {
+        OnPropertyChanged(nameof(QuickCleanEmpty));
+        OnPropertyChanged(nameof(QuickCleanSelectedCount));
+        OnPropertyChanged(nameof(QuickCleanSummary));
+        OnPropertyChanged(nameof(QuickCleanActionText));
+        ApplyQuickCleanCommand?.RaiseCanExecuteChanged();
+        ClearQuickCleanCommand?.RaiseCanExecuteChanged();
+        SelectAllQuickCleanCommand?.RaiseCanExecuteChanged();
+    }
+
+    private void SelectAllQuickClean()
+    {
+        foreach (var item in QuickClean) item.IsSelected = true;
+    }
+
+    private void ClearQuickClean()
+    {
+        foreach (var item in QuickClean) item.IsSelected = false;
+    }
+
+    private Task ApplyQuickCleanAsync()
+    {
+        var escolhidos = QuickClean.Where(i => i.IsSelected).Select(i => i.Definition).ToList();
+        if (escolhidos.Count == 0)
+        {
+            _interaction.ShowMessage("Limpeza rápida", "Marque ao menos um cache para limpar.");
+            return Task.CompletedTask;
+        }
+
+        return ApplyFixesAsync(escolhidos, "Limpeza rápida");
+    }
+
     private void Post(Action action)
     {
         if (_dispatcher.CheckAccess()) action();
@@ -2054,5 +2146,8 @@ public sealed class MainViewModel : ObservableObject
         ClearOosu10SelectionCommand.RaiseCanExecuteChanged();
         ApplyOosu10Command.RaiseCanExecuteChanged();
         RestoreOosu10Command.RaiseCanExecuteChanged();
+        ApplyQuickCleanCommand.RaiseCanExecuteChanged();
+        ClearQuickCleanCommand.RaiseCanExecuteChanged();
+        SelectAllQuickCleanCommand.RaiseCanExecuteChanged();
     }
 }

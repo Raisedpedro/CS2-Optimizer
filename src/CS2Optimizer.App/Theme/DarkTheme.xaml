@@ -628,6 +628,83 @@
         </Setter>
     </Style>
 
+    <Style x:Key="SideTabControl" TargetType="TabControl">
+        <Setter Property="Background" Value="{StaticResource WindowBackgroundBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="TabStripPlacement" Value="Left" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabControl">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="218" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Column="0" Background="{StaticResource SurfaceBrush}"
+                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,1,0">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Bottom" Text="Menu" Visibility="Collapsed" />
+                                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                              HorizontalScrollBarVisibility="Disabled">
+                                    <StackPanel Margin="10,16,10,16">
+                                        <TextBlock Text="NAVEGAR" Style="{StaticResource EyebrowText}"
+                                                   Margin="10,0,0,8" FontSize="10" />
+                                        <TabPanel IsItemsHost="True" />
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </DockPanel>
+                        </Border>
+
+                        <Border Grid.Column="1" Background="{StaticResource WindowBackgroundBrush}">
+                            <ContentPresenter x:Name="PART_SelectedContentHost" ContentSource="SelectedContent" />
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="SideTabItem" TargetType="TabItem">
+        <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Border x:Name="Bd" Background="Transparent" BorderBrush="Transparent"
+                            BorderThickness="1" CornerRadius="10" Padding="11,9" Margin="0,0,0,3">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="Glyph" Grid.Column="0" Text="{TemplateBinding Tag}"
+                                       FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       VerticalAlignment="Center" Margin="0,0,11,0" />
+                            <ContentPresenter Grid.Column="1" ContentSource="Header" VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource HoverBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{StaticResource CardAltBrush}" />
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource BorderStrongBrush}" />
+                            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                            <Setter Property="FontWeight" Value="SemiBold" />
+                            <Setter TargetName="Glyph" Property="Foreground" Value="{StaticResource AccentBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="LogListBox" TargetType="ListBox" BasedOn="{StaticResource BaseListBox}">
         <Setter Property="Background" Value="{StaticResource LogBackgroundBrush}" />
         <Setter Property="FontFamily" Value="Consolas" />

@@ -425,6 +425,75 @@ public static class FixCatalog
                 }
             }));
 
+        fixes.Add(Make("inetcache",
+            "Limpar cache de internet do Windows (INetCache)",
+            "cache",
+            "Limpar o cache de internet do Windows (INetCache)?",
+            "Apaga os arquivos temporários que programas e componentes do Windows guardam em INetCache (páginas, imagens e respostas já baixadas). " +
+            "Senhas e cookies não ficam aqui. Como volta: os apps baixam de novo o que precisarem; a primeira abertura de alguns itens pode ficar um pouco mais lenta.",
+            FixLevel.Optional, false, FixCategories.Limpeza,
+            (c, e) =>
+            {
+                var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Microsoft", "Windows", "INetCache");
+                if (Directory.Exists(dir)) DeleteDirectoryContents(dir, e);
+                return Task.CompletedTask;
+            }));
+
+        fixes.Add(Make("thumbcache",
+            "Limpar cache de miniaturas e ícones do Explorer",
+            "cache",
+            "Limpar o cache de miniaturas e ícones do Windows?",
+            "Apaga os arquivos thumbcache_*.db e iconcache_*.db do Explorer. Eles são recriados sozinhos quando você abre uma pasta; " +
+            "alguns podem estar em uso e são ignorados com segurança. Não mexe em nenhum arquivo pessoal.",
+            FixLevel.Optional, false, FixCategories.Limpeza,
+            (c, e) =>
+            {
+                var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Microsoft", "Windows", "Explorer");
+                if (!Directory.Exists(dir)) return Task.CompletedTask;
+
+                foreach (var file in Directory.EnumerateFiles(dir, "*cache_*.db"))
+                {
+                    try { File.Delete(file); }
+                    catch (Exception ex) { e.Log.Warn($"  miniaturas em uso, ignorado: {Path.GetFileName(file)} ({ex.Message})"); }
+                }
+
+                return Task.CompletedTask;
+            }));
+
+        fixes.Add(Make("deliverycache",
+            "Limpar cache de entrega do Windows Update",
+            "cache",
+            "Limpar o cache do Delivery Optimization (pedaços de atualização já aplicados)?",
+            "Apaga os pedaços de atualizações que o Windows já baixou e aplicou (Delivery Optimization). Não remove atualização instalada nem mexe no histórico. " +
+            "Como volta: o Windows baixa de novo só o que precisar, quando precisar.",
+            FixLevel.Optional, false, FixCategories.Limpeza,
+            (c, e) =>
+            {
+                var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+                var alvos = new[]
+                {
+                    Path.Combine(windows, "SoftwareDistribution", "DeliveryOptimization"),
+                    Path.Combine(windows, "ServiceProfiles", "NetworkService", "AppData", "Local",
+                        "Microsoft", "Windows", "DeliveryOptimization", "Cache")
+                };
+
+                foreach (var dir in alvos)
+                {
+                    try
+                    {
+                        if (Directory.Exists(dir)) DeleteDirectoryContents(dir, e);
+                    }
+                    catch (Exception ex)
+                    {
+                        e.Log.Warn($"  não consegui limpar {dir}: {ex.Message}");
+                    }
+                }
+
+                return Task.CompletedTask;
+            }));
+
         // ---------------- Telemetria (tudo reversível pelo backup) ----------------
         if (ctx.TelemetryServiceStart != 4 || ctx.TelemetryWapStart != 4)
         {

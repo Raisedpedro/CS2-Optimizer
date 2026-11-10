@@ -143,28 +143,31 @@
             </Grid>
         </Border>
 
-        <!-- Abas horizontais -->
-        <TabControl Grid.Row="4" Style="{StaticResource TopTabControl}"
+        <!-- Abas na barra lateral -->
+        <TabControl Grid.Row="4" Style="{StaticResource SideTabControl}"
                     SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
-            <TabItem Header="Resumo" Style="{StaticResource TopTabItem}">
+            <TabItem Header="Início" Tag="&#xE80F;" Style="{StaticResource SideTabItem}">
                 <views:SummaryView />
             </TabItem>
-            <TabItem Header="Correções" Style="{StaticResource TopTabItem}">
+            <TabItem Header="Limpeza rápida" Tag="&#xE74D;" Style="{StaticResource SideTabItem}">
+                <views:QuickCleanView />
+            </TabItem>
+            <TabItem Header="Correções" Tag="&#xE73E;" Style="{StaticResource SideTabItem}">
                 <views:FixesView />
             </TabItem>
-            <TabItem Header="Mitigações CPU" Style="{StaticResource TopTabItem}">
+            <TabItem Header="Mitigações CPU" Tag="&#xE7BA;" Style="{StaticResource SideTabItem}">
                 <views:MitigationsView />
             </TabItem>
-            <TabItem Header="O&amp;O ShutUp10" Style="{StaticResource TopTabItem}">
+            <TabItem Header="O&amp;O ShutUp10" Tag="&#xE713;" Style="{StaticResource SideTabItem}">
                 <views:Oosu10View />
             </TabItem>
-            <TabItem Header="Diagnóstico" Style="{StaticResource TopTabItem}">
+            <TabItem Header="Diagnóstico" Tag="&#xE9D2;" Style="{StaticResource SideTabItem}">
                 <views:DiagnosticsView />
             </TabItem>
-            <TabItem Header="Checklist" Style="{StaticResource TopTabItem}">
+            <TabItem Header="Checklist" Tag="&#xE73A;" Style="{StaticResource SideTabItem}">
                 <views:ChecklistView />
             </TabItem>
-            <TabItem Header="Backups / Desfazer" Style="{StaticResource TopTabItem}">
+            <TabItem Header="Backups / Desfazer" Tag="&#xE81C;" Style="{StaticResource SideTabItem}">
                 <views:BackupsView />
             </TabItem>
         </TabControl>
