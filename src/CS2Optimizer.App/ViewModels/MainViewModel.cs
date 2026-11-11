@@ -472,6 +472,9 @@ public sealed class MainViewModel : ObservableObject
 
     public int PendingRecommendedOosuCount =>
         Oosu10Tweaks.Count(t => t.InPreset && t.Advice != Oosu10Advice.Evitar && !t.IsActive);
+    /// <summary>Itens do O&O sugeridos para CS2 (preset), sem os marcados como evitar.</summary>
+    public int Oosu10RecommendedTotal =>
+        Oosu10Tweaks.Count(t => t.InPreset && t.Advice != Oosu10Advice.Evitar);
     public bool HasRecommendedWork => RecommendedCount > 0 || PendingRecommendedOosuCount > 0;
     public string RecommendedActionText => HasRecommendedWork
         ? $"Aplicar recomendadas ({RecommendedCount + PendingRecommendedOosuCount})"
@@ -677,6 +680,23 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(Step3Detail));
     }
 
+    /// <summary>Texto do cartão principal: o que ainda falta aplicar (correções + O&O).</summary>
+    private void UpdateRecommendedSummary()
+    {
+        var pendentesFix = RecommendedCount;
+        var pendentesOosu = PendingRecommendedOosuCount;
+
+        RecommendedSummary = FixCount == 0 && Oosu10Tweaks.Count == 0
+            ? "Aguardando leitura da máquina."
+            : pendentesFix + pendentesOosu == 0
+                ? "Nada pendente: correções e ajustes sugeridos já estão aplicados nesta máquina."
+                : pendentesFix > 0 && pendentesOosu > 0
+                    ? $"{pendentesFix} correção(ões) recomendada(s) e {pendentesOosu} ajuste(s) do O&O ainda pendentes."
+                    : pendentesFix > 0
+                        ? $"{pendentesFix} correção(ões) recomendada(s) de {FixCount} aplicável(is)."
+                        : $"{pendentesOosu} ajuste(s) do O&O sugeridos ainda inativos.";
+    }
+
     private void UpdateHealthScore()
     {
         if (_context is null)
@@ -689,12 +709,14 @@ public sealed class MainViewModel : ObservableObject
         else
         {
             // A nota mede só o que o programa consegue resolver: quanto das correções
-            // ainda está pendente. Os "pontos de atenção" (overlays abertos, mitigação
-            // reduzida por escolha sua...) têm cartão e aba próprios e NÃO entram aqui -
-            // senão a nota nunca chega a 100 mesmo depois de aplicar tudo.
-            var penalty = FixCount == 0
+            // e dos ajustes sugeridos do O&O ainda está pendente. Os "pontos de atenção"
+            // (overlays abertos, mitigação reduzida por escolha sua...) têm cartão e aba
+            // próprios e NÃO entram aqui - senão a nota nunca chega a 100.
+            var pendentes = RecommendedCount + PendingRecommendedOosuCount;
+            var total = FixCount + Oosu10RecommendedTotal;
+            var penalty = total == 0
                 ? 0
-                : (int)Math.Round(RecommendedCount * 100d / FixCount, MidpointRounding.AwayFromZero);
+                : (int)Math.Round(pendentes * 100d / total, MidpointRounding.AwayFromZero);
             var score = Math.Clamp(100 - penalty, 0, 100);
 
             HealthScore = score;
@@ -864,11 +886,7 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(SelectedCountText));
         OnPropertyChanged(nameof(HasFixes));
         OnPropertyChanged(nameof(HasNoFixes));
-        RecommendedSummary = FixCount == 0
-            ? "Aguardando leitura da máquina."
-            : RecommendedCount == 0
-                ? "Nada pendente: as correções recomendadas já estão aplicadas nesta máquina."
-                : $"{RecommendedCount} correção(ões) recomendada(s) de {FixCount} aplicável(is).";
+        UpdateRecommendedSummary();
         RefreshPendingChanges();
         UpdateQuickClean();
         UpdateHealthScore();
@@ -1542,6 +1560,9 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(PendingRecommendedOosuCount));
         OnPropertyChanged(nameof(HasRecommendedWork));
         OnPropertyChanged(nameof(RecommendedActionText));
+        OnPropertyChanged(nameof(Oosu10RecommendedTotal));
+        UpdateRecommendedSummary();
+        UpdateHealthScore();
         Oosu10Summary = Oosu10Tweaks.Count == 0
             ? "Nenhum ajuste disponível."
             : $"{Oosu10ActiveCount} de {Oosu10Tweaks.Count} ajustes já estão ativos · " +
