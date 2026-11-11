@@ -164,7 +164,10 @@ public sealed class ConsoleRunner
                 {
                     ConfirmBatch = !auto,
                     Auto = auto,
-                    ReportOnly = reportOnly
+                    ReportOnly = reportOnly,
+                    // --clean-only mexe só em cache: sem backup e sem ponto de restauração.
+                    SkipBackup = cleanOnly,
+                    SkipRestorePoint = cleanOnly
                 };
                 var result = await _engine.ApplyAsync(selected, new ConsoleInteraction(), applyOptions, cancellationToken);
                 PrintResult(result);

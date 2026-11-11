@@ -6,11 +6,16 @@ namespace CS2Optimizer.App.Dialogs;
 
 public partial class BatchConfirmWindow : Window
 {
-    public BatchConfirmWindow(IReadOnlyList<FixDefinition> fixes)
+    public BatchConfirmWindow(IReadOnlyList<FixDefinition> fixes, bool willBackup = true)
     {
         InitializeComponent();
         Fixes = fixes.Select(f => new FixItemViewModel(f)).ToArray();
         DataContext = this;
+
+        // Limpeza de cache não grava registro/BCD: prometer backup ali seria mentira.
+        if (!willBackup && FindName("BackupNote") is System.Windows.Controls.TextBlock nota)
+            nota.Text = "Só caches: nada de registro ou BCD é alterado, então o programa não cria backup.";
+
         Loaded += (_, _) => CancelButtonFocus();
     }
 

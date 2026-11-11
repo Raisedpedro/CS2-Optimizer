@@ -16,7 +16,7 @@ public sealed class ConsoleInteraction : IInteraction
         return answer.Trim().ToLowerInvariant() is "s" or "sim" or "y" or "yes";
     }
 
-    public bool ConfirmBatch(IReadOnlyList<FixDefinition> fixes)
+    public bool ConfirmBatch(IReadOnlyList<FixDefinition> fixes, bool willBackup)
     {
         var labels = new Dictionary<FixLevel, string>
         {
@@ -51,7 +51,9 @@ public sealed class ConsoleInteraction : IInteraction
         }
 
         sb.AppendLine();
-        sb.Append("Antes de começar é feito o backup (registro, BCD e plano de energia). O ponto de restauração é perguntado logo em seguida.");
+        sb.Append(willBackup
+            ? "Antes de começar é feito o backup (registro, BCD e plano de energia). O ponto de restauração é perguntado logo em seguida."
+            : "Só caches: nada de registro ou BCD é alterado, então não há backup nem ponto de restauração.");
         Console.WriteLine();
         Console.WriteLine(sb.ToString());
         Console.WriteLine();

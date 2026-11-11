@@ -24,12 +24,12 @@ public sealed class WpfInteraction : IAppInteraction
         });
     }
 
-    public bool ConfirmBatch(IReadOnlyList<FixDefinition> fixes)
+    public bool ConfirmBatch(IReadOnlyList<FixDefinition> fixes, bool willBackup)
     {
         if (fixes.Count == 0) return false;
         return OnUi(() =>
         {
-            var window = new BatchConfirmWindow(fixes) { Owner = Owner };
+            var window = new BatchConfirmWindow(fixes, willBackup) { Owner = Owner };
             window.ShowDialog();
             return window.Confirmed;
         });

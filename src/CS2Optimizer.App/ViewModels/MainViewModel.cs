@@ -1130,18 +1130,28 @@ public sealed class MainViewModel : ObservableObject
         return ApplyFixesAsync(selected, "Aplicar selecionadas");
     }
 
-    private async Task ApplyFixesAsync(IReadOnlyList<FixDefinition> fixes, string title)
+    private async Task ApplyFixesAsync(IReadOnlyList<FixDefinition> fixes, string title, bool semBackup = false)
     {
         if (IsBusy) return;
 
         IsBusy = true;
-        BeginOperation(title, $"{fixes.Count} item(ns) selecionado(s). Confirme e aguarde o backup.", fixes.Count);
+        BeginOperation(title,
+            semBackup
+                ? $"{fixes.Count} item(ns) selecionado(s). Limpeza de cache dispensa backup."
+                : $"{fixes.Count} item(ns) selecionado(s). Confirme e aguarde o backup.",
+            fixes.Count);
         try
         {
             Status = "Aplicando alterações...";
             StatusDetail = "Confirme os itens e aguarde o backup.";
             var result = await _services.Engine.ApplyAsync(
-                fixes, _interaction, new ApplyOptions { ConfirmBatch = true },
+                fixes, _interaction,
+                new ApplyOptions
+                {
+                    ConfirmBatch = true,
+                    SkipBackup = semBackup,
+                    SkipRestorePoint = semBackup
+                },
                 progress: ReportProgress);
 
             NeedReboot = _services.Engine.NeedReboot || result.NeedReboot;
@@ -2180,7 +2190,8 @@ public sealed class MainViewModel : ObservableObject
             return Task.CompletedTask;
         }
 
-        return ApplyFixesAsync(escolhidos, "Limpeza rápida");
+        // Cache não é configuração: sem ponto de restauração e sem backup.
+        return ApplyFixesAsync(escolhidos, "Limpeza rápida", semBackup: true);
     }
 
     private void Post(Action action)

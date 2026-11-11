@@ -17,7 +17,7 @@ public enum RestorePointChoice
 public interface IInteraction
 {
     bool Confirm(string question, FixLevel level);
-    bool ConfirmBatch(IReadOnlyList<FixDefinition> fixes);
+    bool ConfirmBatch(IReadOnlyList<FixDefinition> fixes, bool willBackup);
     bool ConfirmRisky(FixDefinition fix);
     RestorePointChoice AskRestorePoint();
     bool ConfirmRestoreBackup(string path);
@@ -30,6 +30,12 @@ public sealed class ApplyOptions
     public bool ReportOnly { get; init; }
     public bool SkipRiskyConfirmation { get; init; }
     public bool SkipBatchConfirmation { get; init; }
+
+    /// <summary>Limpeza de cache: nada de registro/BCD, então não há o que restaurar.</summary>
+    public bool SkipBackup { get; init; }
+
+    /// <summary>Limpeza de cache não muda configuração: dispensar o ponto de restauração.</summary>
+    public bool SkipRestorePoint { get; init; }
 }
 
 public sealed record ScanResult(
@@ -140,7 +146,7 @@ public sealed class OptimizationEngine
         // 2) Confirmação em lote (opcional).
         if (options.ConfirmBatch && !options.SkipBatchConfirmation && !options.Auto)
         {
-            if (!interaction.ConfirmBatch(selected))
+            if (!interaction.ConfirmBatch(selected, !options.SkipBackup))
             {
                 _log.Warn("Cancelado - nada foi alterado.");
                 return new ApplyResult(applied, skipped, failed, false);
@@ -149,7 +155,11 @@ public sealed class OptimizationEngine
 
         // 3) Ponto de restauração: sempre perguntado, nunca automático.
         var createPoint = false;
-        if (options.Auto)
+        if (options.SkipRestorePoint)
+        {
+            // Limpeza de cache: não há configuração para restaurar.
+        }
+        else if (options.Auto)
         {
             createPoint = true;
         }
@@ -165,7 +175,7 @@ public sealed class OptimizationEngine
         }
 
         // 4) Backup antes de qualquer escrita.
-        if (!Backup.BackupMade)
+        if (!options.SkipBackup && !Backup.BackupMade)
         {
             var stamp = BackupService.NewStamp();
             await Backup.CreateBackupAsync(stamp, createPoint, cancellationToken);

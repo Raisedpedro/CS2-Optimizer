@@ -13,7 +13,7 @@
 
         <StackPanel Grid.Row="0" Margin="0,0,0,12">
             <TextBlock Text="Confirme o que será alterado" Style="{StaticResource TitleText}" FontSize="20" />
-            <TextBlock Style="{StaticResource SubtitleText}" Margin="0,4,0,0"
+            <TextBlock x:Name="BackupNote" Style="{StaticResource SubtitleText}" Margin="0,4,0,0"
                        Text="O programa cria um backup completo antes de gravar. Nada é alterado sem a sua confirmação." />
         </StackPanel>
 
