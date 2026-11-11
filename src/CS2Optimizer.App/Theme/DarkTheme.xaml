@@ -32,11 +32,15 @@
 
     <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
 
+    <!-- Fonte embutida no app (Inter, licença OFL) - não precisa instalar nada -->
+    <!-- preenchido em tempo de execução com a Inter embutida (App.TryLoadBundledFont); aqui é só o fallback -->
+    <FontFamily x:Key="AppFont">Segoe UI</FontFamily>
+
     <Style TargetType="Window">
         <Setter Property="Background" Value="{StaticResource WindowBackgroundBrush}" />
         <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-        <Setter Property="FontFamily" Value="Segoe UI" />
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontFamily" Value="{DynamicResource AppFont}" />
+        <Setter Property="FontSize" Value="13" />
     </Style>
 
     <Style TargetType="TextBlock">
@@ -53,7 +57,7 @@
 
     <Style x:Key="SubtitleText" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontSize" Value="13" />
         <Setter Property="TextWrapping" Value="Wrap" />
     </Style>
 
@@ -302,7 +306,7 @@
 
     <Style x:Key="BaseCheckBox" TargetType="CheckBox">
         <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontSize" Value="13" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">

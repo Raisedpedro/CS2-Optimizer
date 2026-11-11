@@ -229,6 +229,12 @@ Cobrem:
 - catálogo: explicação obrigatória, itens recomendados, `power-plan` em desktop/notebook;
 - catálogo do O&O ShutUp10: ids únicos, grupos válidos, caminhos HKLM/HKCU, tipos suportados e preset sem itens `evitar`.
 
+## Créditos
+
+- Fonte **Inter**, de Rasmus Andersson — SIL Open Font License 1.1. Vai embutida em
+  `src/CS2Optimizer.App/Assets/Fonts` (o texto da licença está em `OFL.txt` na mesma
+  pasta); o app não instala nada no sistema.
+
 ## Limitações conhecidas
 
 - Não há garantia de ganho de FPS; vários itens são de fluidez, latência ou apenas limpeza.
