@@ -682,23 +682,26 @@ public sealed class MainViewModel : ObservableObject
         if (_context is null)
         {
             HealthScore = 0;
-            HealthScoreDisplay = "—";
+            HealthScoreDisplay = "-";
             HealthScoreLabel = "Aguardando leitura";
             HealthScoreBrush = UiBrushes.Muted;
         }
         else
         {
+            // A nota mede só o que o programa consegue resolver: quanto das correções
+            // ainda está pendente. Os "pontos de atenção" (overlays abertos, mitigação
+            // reduzida por escolha sua...) têm cartão e aba próprios e NÃO entram aqui -
+            // senão a nota nunca chega a 100 mesmo depois de aplicar tudo.
             var penalty = FixCount == 0
                 ? 0
-                : (int)Math.Round(RecommendedCount * 100d / FixCount);
-            // Mitigação reduzida é risco real de segurança: pesa mais que um aviso comum.
-            var mitigationPenalty = _context.Mit.IsReduced ? 10 : 0;
-            var score = Math.Clamp(100 - penalty - ProblemCount * 2 - mitigationPenalty, 0, 100);
+                : (int)Math.Round(RecommendedCount * 100d / FixCount, MidpointRounding.AwayFromZero);
+            var score = Math.Clamp(100 - penalty, 0, 100);
 
             HealthScore = score;
             HealthScoreDisplay = score.ToString();
             HealthScoreLabel = score switch
             {
+                100 => "Tudo aplicado",
                 >= 85 => "Excelente",
                 >= 70 => "Bom",
                 >= 50 => "Ajustes pendentes",
