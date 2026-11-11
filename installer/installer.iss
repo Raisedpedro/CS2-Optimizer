@@ -1,5 +1,5 @@
 ﻿#define MyAppName "CS2 / Windows Optimizer"
-#define MyAppVersion "1.0.12"
+#define MyAppVersion "1.0.13"
 #define MyAppPublisher "CS2 Optimizer"
 #define MyAppExeName "CS2Optimizer.exe"
 #define MyAppId "{{8E2E9C1A-6D7B-4E6F-9B3A-2C1D5E7F9A01}"

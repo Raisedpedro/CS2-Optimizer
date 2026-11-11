@@ -263,8 +263,9 @@ public static class Oosu10Catalog
         list.Add(T("headset-button", Permissoes,
             "Desativar o app padrão do botão do headset",
             "AgentActivationLastUsed = 0: o botão do headset para de reabrir o último app.",
-            Advice.Recomendado, true,
-            BothDw(@"Software\Microsoft\Speech_OneCore\Settings\VoiceActivation\UserPreferenceForAllApps", "AgentActivationLastUsed", 0)));
+            Advice.Opcional, false,
+            BothDw(@"Software\Microsoft\Speech_OneCore\Settings\VoiceActivation\UserPreferenceForAllApps", "AgentActivationLastUsed", 0),
+            note: "O Windows protege essa chave: nem administrador consegue gravar. Fica fora das recomendadas."));
 
         list.Add(T("cap-notifications", Permissoes,
             "Bloquear acesso de apps às suas notificações",
@@ -708,10 +709,11 @@ public static class Oosu10Catalog
         list.Add(T("news-interests", Diversos,
             "Desativar Notícias e Interesses na barra de tarefas",
             "ShellFeedsTaskbarViewMode = 2 e EnableFeeds = 0.",
-            Advice.Recomendado, true,
+            Advice.Opcional, false,
             Merge(BothDw(@"Software\Microsoft\Windows\CurrentVersion\Feeds", "ShellFeedsTaskbarViewMode", 2),
                 BothDw(@"Software\Policies\Microsoft\Windows\Windows Feeds", "EnableFeeds", 0)),
-            BothDw(@"Software\Microsoft\Windows\CurrentVersion\Feeds", "ShellFeedsTaskbarViewMode", 0)));
+            BothDw(@"Software\Microsoft\Windows\CurrentVersion\Feeds", "ShellFeedsTaskbarViewMode", 0),
+            note: "O Windows protege esses valores (nem administrador grava). Fica fora das recomendadas; use Barra de tarefas > Widgets nas Configurações."));
 
         list.Add(T("network-probing", Diversos,
             "Desativar a sonda de atividade de rede (NCSI)",
