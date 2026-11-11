@@ -985,6 +985,7 @@ public sealed class MainViewModel : ObservableObject
         var skippedFixes = new List<string>();
         var appliedTweaks = new List<string>();
         var failedTweaks = new List<string>();
+        var blockedTweaks = new List<string>();
         var needReboot = false;
 
         IsBusy = true;
@@ -1029,7 +1030,12 @@ public sealed class MainViewModel : ObservableObject
                     progress: (done, stageTotal) => ReportProgress(fixesTotal + done, fixesTotal + stageTotal)));
 
                 appliedTweaks.AddRange(oosu.Applied);
-                failedTweaks.AddRange(oosu.Failed);
+                var bloqueados = tweaks
+                    .Where(t => oosu.BlockedIds.Contains(t.Id, StringComparer.OrdinalIgnoreCase))
+                    .ToList();
+                failedTweaks.AddRange(oosu.Failed.Where(f =>
+                    !bloqueados.Any(b => f.StartsWith(b.Title, StringComparison.Ordinal))));
+                blockedTweaks.AddRange(bloqueados.Select(t => t.Title));
                 MarkBlockedTweaks(oosu);
                 needReboot |= tweaks.Any(t => t.RequiresReboot);
             }
@@ -1064,6 +1070,14 @@ public sealed class MainViewModel : ObservableObject
                 summary.AppendLine();
                 summary.AppendLine("Falhas:");
                 foreach (var item in failedFixes.Concat(failedTweaks)) summary.AppendLine("  - " + item);
+            }
+
+            if (blockedTweaks.Count > 0)
+            {
+                summary.AppendLine();
+                summary.AppendLine($"Bloqueados pelo Windows ({blockedTweaks.Count}) — a chave é protegida pelo sistema, não é falha do programa:");
+                foreach (var item in blockedTweaks) summary.AppendLine("  - " + item);
+                summary.AppendLine("  Eles saem da lista de pendencias e da nota.");
             }
 
             summary.AppendLine();
