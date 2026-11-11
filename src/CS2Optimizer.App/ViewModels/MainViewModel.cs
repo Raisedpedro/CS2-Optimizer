@@ -63,7 +63,7 @@ public sealed class MainViewModel : ObservableObject
     private bool _oosu10OnlyPending;
     private Oosu10TweakViewModel? _selectedOosu10;
     private bool _suppressOosu10Refresh;
-    private string _oosu10Summary = "Marque os ajustes que deseja aplicar ou use as sugestões para CS2.";
+    private string _oosu10Summary = "Marque os ajustes que deseja aplicar ou use as recomendadas para CS2.";
 
     private bool _isProgressIndeterminate = true;
     private double _progressValue;
@@ -472,7 +472,7 @@ public sealed class MainViewModel : ObservableObject
 
     public int PendingRecommendedOosuCount =>
         Oosu10Tweaks.Count(t => t.InPreset && t.Advice != Oosu10Advice.Evitar && !t.IsActive);
-    /// <summary>Itens do O&O sugeridos para CS2 (preset), sem os marcados como evitar.</summary>
+    /// <summary>Itens do O&O recomendados para CS2 (preset), sem os marcados como evitar.</summary>
     public int Oosu10RecommendedTotal =>
         Oosu10Tweaks.Count(t => t.InPreset && t.Advice != Oosu10Advice.Evitar);
     public bool HasRecommendedWork => RecommendedCount > 0 || PendingRecommendedOosuCount > 0;
@@ -689,12 +689,12 @@ public sealed class MainViewModel : ObservableObject
         RecommendedSummary = FixCount == 0 && Oosu10Tweaks.Count == 0
             ? "Aguardando leitura da máquina."
             : pendentesFix + pendentesOosu == 0
-                ? "Nada pendente: correções e ajustes sugeridos já estão aplicados nesta máquina."
+                ? "Nada pendente: correções e ajustes recomendados já estão aplicados nesta máquina."
                 : pendentesFix > 0 && pendentesOosu > 0
                     ? $"{pendentesFix} correção(ões) recomendada(s) e {pendentesOosu} ajuste(s) do O&O ainda pendentes."
                     : pendentesFix > 0
                         ? $"{pendentesFix} correção(ões) recomendada(s) de {FixCount} aplicável(is)."
-                        : $"{pendentesOosu} ajuste(s) do O&O sugeridos ainda inativos.";
+                        : $"{pendentesOosu} ajuste(s) do O&O recomendados ainda inativos.";
     }
 
     private void UpdateHealthScore()
@@ -709,7 +709,7 @@ public sealed class MainViewModel : ObservableObject
         else
         {
             // A nota mede só o que o programa consegue resolver: quanto das correções
-            // e dos ajustes sugeridos do O&O ainda está pendente. Os "pontos de atenção"
+            // e dos ajustes recomendados do O&O ainda está pendente. Os "pontos de atenção"
             // (overlays abertos, mitigação reduzida por escolha sua...) têm cartão e aba
             // próprios e NÃO entram aqui - senão a nota nunca chega a 100.
             var pendentes = RecommendedCount + PendingRecommendedOosuCount;
@@ -943,7 +943,7 @@ public sealed class MainViewModel : ObservableObject
 
     /// <summary>
     /// Ação única do programa: aplica TUDO o que é recomendado — correções recomendadas
-    /// e os ajustes do O&O sugeridos para CS2 que ainda estão inativos. Nada opcional,
+    /// e os ajustes do O&O recomendados para CS2 que ainda estão inativos. Nada opcional,
     /// de risco ou marcado como "evitar" entra aqui.
     /// </summary>
     private async Task ApplyRecommendedAsync()
@@ -960,7 +960,7 @@ public sealed class MainViewModel : ObservableObject
         {
             _interaction.ShowMessage("Aplicar recomendadas",
                 "Nada recomendado está pendente nesta máquina.\n\n" +
-                "As correções recomendadas já estão aplicadas e os ajustes do O&O sugeridos para CS2 já estão ativos.");
+                "As correções recomendadas já estão aplicadas e os ajustes do O&O recomendados para CS2 já estão ativos.");
             return;
         }
 
@@ -968,7 +968,7 @@ public sealed class MainViewModel : ObservableObject
         question.AppendLine("Aplicar tudo o que é recomendado nesta máquina?");
         question.AppendLine();
         question.AppendLine($"• Correções recomendadas: {fixes.Count}");
-        question.AppendLine($"• Ajustes do O&O sugeridos para CS2 (ainda inativos): {tweaks.Count}");
+        question.AppendLine($"• Ajustes do O&O recomendados para CS2 (ainda inativos): {tweaks.Count}");
         question.AppendLine();
         question.AppendLine("Itens opcionais, de risco e os marcados como \"evitar\" ficam de fora.");
         question.AppendLine("Cada escrita passa pelo backup e pode ser desfeita em Backups / Desfazer.");
@@ -1019,7 +1019,7 @@ public sealed class MainViewModel : ObservableObject
             if (tweaks.Count > 0)
             {
                 Status = "Aplicando ajustes do O&O ShutUp10...";
-                UpdateOperationDetail($"{tweaks.Count} ajuste(s) sugeridos para CS2.");
+                UpdateOperationDetail($"{tweaks.Count} ajuste(s) recomendados para CS2.");
                 var oosu = await Task.Run(() => _services.Oosu10.Apply(
                     tweaks, restore: false,
                     log: msg => _services.Logger.Log(msg),
@@ -1566,7 +1566,7 @@ public sealed class MainViewModel : ObservableObject
         Oosu10Summary = Oosu10Tweaks.Count == 0
             ? "Nenhum ajuste disponível."
             : $"{Oosu10ActiveCount} de {Oosu10Tweaks.Count} ajustes já estão ativos · " +
-              $"{Oosu10PresetCount} sugeridos para CS2 · {Oosu10SelectedCount} selecionado(s).";
+              $"{Oosu10PresetCount} recomendados para CS2 · {Oosu10SelectedCount} selecionado(s).";
     }
 
     private async Task ApplyOosu10Async()

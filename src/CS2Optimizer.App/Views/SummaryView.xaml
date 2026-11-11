@@ -11,7 +11,7 @@
                            Margin="0,6,0,0" />
                 <TextBlock Style="{StaticResource SubtitleText}" Margin="0,6,0,0" MaxWidth="860"
                            HorizontalAlignment="Left"
-                           Text="Tudo começa no botão Aplicar recomendadas, no topo da janela: ele lê a máquina e aplica só o que é recomendado — correções e ajustes do O&amp;O sugeridos para CS2 — em um único passo. Nada é alterado sem confirmação e tudo pode ser desfeito em Backups / Desfazer." />
+                           Text="Tudo começa no botão Aplicar recomendadas, no topo da janela: ele lê a máquina e aplica só o que é recomendado — correções e ajustes do O&amp;O recomendados para CS2 - em um único passo. Nada é alterado sem confirmação e tudo pode ser desfeito em Backups / Desfazer." />
             </StackPanel>
 
             <!-- Cartão principal: resumo + saúde -->
@@ -29,7 +29,7 @@
                                    Margin="0,8,0,0" />
                         <TextBlock Style="{StaticResource MutedText}" Margin="0,8,0,0" MaxWidth="760"
                                    HorizontalAlignment="Left"
-                                   Text="Aplicar recomendadas soma duas coisas: as correções marcadas como recomendadas e os ajustes do O&amp;O ShutUp10 sugeridos para CS2 que ainda estão inativos. Ficam de fora os itens opcionais, os de risco e os marcados como &quot;evitar&quot;." />
+                                   Text="Aplicar recomendadas soma duas coisas: as correções marcadas como recomendadas e os ajustes do O&amp;O ShutUp10 recomendados para CS2 que ainda estão inativos. Ficam de fora os itens opcionais, os de risco e os marcados como &quot;evitar&quot;." />
 
                         <Grid Margin="0,18,0,0">
                             <Grid.ColumnDefinitions>

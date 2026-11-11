@@ -82,7 +82,7 @@ public sealed class Oosu10TweakViewModel : ObservableObject
         _ => UiBrushes.Risky
     };
 
-    public string PresetText => InPreset ? "sugerido p/ CS2" : "";
+    public string PresetText => InPreset ? "recomendado p/ CS2" : "";
     public bool HasNote => !string.IsNullOrWhiteSpace(Note);
     public string RebootText => RequiresReboot ? "exige reinício" : "";
     public string AdminText => NeedsAdmin ? "HKLM (admin)" : "";

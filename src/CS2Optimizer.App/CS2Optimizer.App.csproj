@@ -19,7 +19,7 @@
     <ApplicationIcon>Assets\icone.ico</ApplicationIcon>
     <AssemblyName>CS2Optimizer</AssemblyName>
     <RootNamespace>CS2Optimizer.App</RootNamespace>
-    <Version>1.0.9</Version>
+    <Version>1.0.10</Version>
     <Product>CS2 / Windows Optimizer</Product>
     <Description>Diagnostico e ajustes seguros e reversiveis para CS2 no Windows 10/11.</Description>
     <Authors>CS2 Optimizer</Authors>

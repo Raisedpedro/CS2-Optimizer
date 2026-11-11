@@ -57,7 +57,7 @@
                             ToolTip="Faz uma leitura completa (hardware, registro, Steam, BCD e mitigações)." />
                     <Button Content="{Binding RecommendedActionText}" Style="{StaticResource PrimaryButton}"
                             Command="{Binding ApplyRecommendedCommand}"
-                            ToolTip="Aplica tudo o que é recomendado: correções recomendadas e os ajustes do O&amp;O sugeridos para CS2 que ainda estão inativos. Nada opcional ou de risco entra aqui. Avisa no fim se precisa reiniciar." />
+                            ToolTip="Aplica tudo o que é recomendado: correções recomendadas e os ajustes do O&amp;O recomendados para CS2 que ainda estão inativos. Nada opcional ou de risco entra aqui. Avisa no fim se precisa reiniciar." />
                 </StackPanel>
             </Grid>
         </Border>
