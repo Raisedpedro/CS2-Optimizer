@@ -6,6 +6,7 @@ namespace CS2Optimizer.App.ViewModels;
 public sealed class Oosu10TweakViewModel : ObservableObject
 {
     private bool _isSelected;
+    private bool _isBlocked;
     private Oosu10State _state;
 
     public Oosu10TweakViewModel(Oosu10Tweak tweak, Oosu10State state)
@@ -51,22 +52,39 @@ public sealed class Oosu10TweakViewModel : ObservableObject
         }
     }
 
-    public string StateText => State switch
+    /// <summary>O Windows protege essa chave: nem como administrador a gravação passa.</summary>
+    public bool IsBlocked
     {
-        Oosu10State.Ativo => "Ativo",
-        Oosu10State.Parcial => "Parcial",
-        _ => "Inativo"
-    };
+        get => _isBlocked;
+        set
+        {
+            if (!SetProperty(ref _isBlocked, value)) return;
+            OnPropertyChanged(nameof(StateText));
+            OnPropertyChanged(nameof(StateBrush));
+            OnPropertyChanged(nameof(IsPending));
+        }
+    }
 
-    public Brush StateBrush => State switch
-    {
-        Oosu10State.Ativo => UiBrushes.Safe,
-        Oosu10State.Parcial => UiBrushes.Warning,
-        _ => UiBrushes.Muted
-    };
+    public string StateText => IsBlocked
+        ? "Bloqueado"
+        : State switch
+        {
+            Oosu10State.Ativo => "Ativo",
+            Oosu10State.Parcial => "Parcial",
+            _ => "Inativo"
+        };
+
+    public Brush StateBrush => IsBlocked
+        ? UiBrushes.Caution
+        : State switch
+        {
+            Oosu10State.Ativo => UiBrushes.Safe,
+            Oosu10State.Parcial => UiBrushes.Warning,
+            _ => UiBrushes.Muted
+        };
 
     public bool IsActive => State == Oosu10State.Ativo;
-    public bool IsPending => State != Oosu10State.Ativo;
+    public bool IsPending => !IsBlocked && State != Oosu10State.Ativo;
 
     public string AdviceDisplay => Advice switch
     {

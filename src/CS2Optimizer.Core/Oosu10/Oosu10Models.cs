@@ -56,7 +56,8 @@ public sealed class Oosu10Tweak
 public sealed record Oosu10ApplyResult(
     IReadOnlyList<string> Applied,
     IReadOnlyList<string> Failed,
-    int Writes);
+    int Writes,
+    IReadOnlyList<string> BlockedIds);
 
 public static class Oosu10Groups
 {

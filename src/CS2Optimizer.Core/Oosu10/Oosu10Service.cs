@@ -1,3 +1,4 @@
+using System.Security;
 using CS2Optimizer.Core.Services;
 
 namespace CS2Optimizer.Core.Oosu10;
@@ -35,6 +36,7 @@ public sealed class Oosu10Service
     {
         var applied = new List<string>();
         var failed = new List<string>();
+        var blocked = new List<string>();
         var writes = 0;
         var list = tweaks as IReadOnlyList<Oosu10Tweak> ?? tweaks.ToList();
         var index = 0;
@@ -58,6 +60,10 @@ public sealed class Oosu10Service
                 {
                     errors.Add(action.Describe() + " -> " + ex.Message);
                     log?.Invoke($"{tweak.Title}: falhou {action.Describe()} -> {ex.Message}");
+
+                    // Chave/valor protegido pelo Windows: nem como administrador dá para gravar.
+                    if (ex is UnauthorizedAccessException or SecurityException)
+                        blocked.Add(tweak.Id);
                 }
             }
 
@@ -76,7 +82,7 @@ public sealed class Oosu10Service
             progress?.Invoke(++index, list.Count);
         }
 
-        return new Oosu10ApplyResult(applied, failed, writes);
+        return new Oosu10ApplyResult(applied, failed, writes, blocked.Distinct(StringComparer.OrdinalIgnoreCase).ToList());
     }
 
     /// <summary>Estado de volta: o alternativo do arquivo ou, se não houver, remover o valor.</summary>

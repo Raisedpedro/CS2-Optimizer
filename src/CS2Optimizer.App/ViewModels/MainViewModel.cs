@@ -471,10 +471,13 @@ public sealed class MainViewModel : ObservableObject
         : $"Limpar {QuickCleanSelectedCount} cache(s)";
 
     public int PendingRecommendedOosuCount =>
-        Oosu10Tweaks.Count(t => t.InPreset && t.Advice != Oosu10Advice.Evitar && !t.IsActive);
+        Oosu10Tweaks.Count(t => t.InPreset && t.Advice != Oosu10Advice.Evitar && !t.IsActive && !t.IsBlocked);
+
+    /// <summary>Ajustes que o Windows protege: aparecem, mas não contam como pendência.</summary>
+    public int BlockedOosu10Count => Oosu10Tweaks.Count(t => t.IsBlocked);
     /// <summary>Itens do O&O recomendados para CS2 (preset), sem os marcados como evitar.</summary>
     public int Oosu10RecommendedTotal =>
-        Oosu10Tweaks.Count(t => t.InPreset && t.Advice != Oosu10Advice.Evitar);
+        Oosu10Tweaks.Count(t => t.InPreset && t.Advice != Oosu10Advice.Evitar && !t.IsBlocked);
     public bool HasRecommendedWork => RecommendedCount > 0 || PendingRecommendedOosuCount > 0;
     public string RecommendedActionText => HasRecommendedWork
         ? $"Aplicar recomendadas ({RecommendedCount + PendingRecommendedOosuCount})"
@@ -1027,6 +1030,7 @@ public sealed class MainViewModel : ObservableObject
 
                 appliedTweaks.AddRange(oosu.Applied);
                 failedTweaks.AddRange(oosu.Failed);
+                MarkBlockedTweaks(oosu);
                 needReboot |= tweaks.Any(t => t.RequiresReboot);
             }
 
@@ -1457,6 +1461,7 @@ public sealed class MainViewModel : ObservableObject
             foreach (var tweak in _services.Oosu10.All)
             {
                 var item = new Oosu10TweakViewModel(tweak, _services.Oosu10.GetState(tweak));
+                item.IsBlocked = _updateSettings.IsBlocked(tweak.Id);
                 item.PropertyChanged += Oosu10Item_PropertyChanged;
                 item.IsSelected = selectedIds.Contains(tweak.Id);
                 Oosu10Tweaks.Add(item);
@@ -1551,6 +1556,22 @@ public sealed class MainViewModel : ObservableObject
         RefreshCommands();
     }
 
+    /// <summary>
+    /// Lembra quais ajustes o Windows protege (gravação negada mesmo como administrador)
+    /// e esquece os que voltaram a funcionar. Sem isso eles ficariam "pendentes" para sempre.
+    /// </summary>
+    private void MarkBlockedTweaks(Oosu10ApplyResult result)
+    {
+        foreach (var id in result.BlockedIds) _updateSettings.SetBlocked(id, true);
+
+        foreach (var item in Oosu10Tweaks)
+        {
+            var aplicou = result.Applied.Any(titulo =>
+                string.Equals(titulo, item.Title, StringComparison.Ordinal));
+            if (aplicou) _updateSettings.SetBlocked(item.Id, false);
+        }
+    }
+
     private void UpdateOosu10Summary()
     {
         OnPropertyChanged(nameof(Oosu10SelectedCount));
@@ -1566,7 +1587,8 @@ public sealed class MainViewModel : ObservableObject
         Oosu10Summary = Oosu10Tweaks.Count == 0
             ? "Nenhum ajuste disponível."
             : $"{Oosu10ActiveCount} de {Oosu10Tweaks.Count} ajustes já estão ativos · " +
-              $"{Oosu10PresetCount} recomendados para CS2 · {Oosu10SelectedCount} selecionado(s).";
+              $"{Oosu10PresetCount} recomendados para CS2 · {Oosu10SelectedCount} selecionado(s)." +
+              (BlockedOosu10Count > 0 ? $" {BlockedOosu10Count} bloqueado(s) pelo Windows (não dá para alterar nem como administrador)." : "");
     }
 
     private async Task ApplyOosu10Async()
@@ -1640,6 +1662,7 @@ public sealed class MainViewModel : ObservableObject
             }
 
             NeedReboot = selected.Any(t => t.RequiresReboot) || NeedReboot;
+            MarkBlockedTweaks(result);
             RefreshOosu10State();
 
             Status = result.Applied.Count > 0 ? "Ajustes do O&O aplicados." : "Nada foi alterado.";
@@ -1721,10 +1744,10 @@ public sealed class MainViewModel : ObservableObject
                     UiBrushes.Caution);
             }
 
+            MarkBlockedTweaks(result);
             RefreshOosu10State();
 
-            Status = result.Applied.Count > 0 ? "Ajustes do O&O revertidos." : "Nada foi alterado.";
-            StatusDetail = result.Failed.Count > 0
+            Status = result.Applied.Count > 0 ? "Ajustes do O&O revertidos." : "Nada foi alterado.";            StatusDetail = result.Failed.Count > 0
                 ? $"{result.Failed.Count} ajuste(s) falharam."
                 : "Estado relido do registro.";
 
