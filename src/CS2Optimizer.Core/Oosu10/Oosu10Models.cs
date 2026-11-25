@@ -62,7 +62,7 @@ public sealed record Oosu10ApplyResult(
 public static class Oosu10Groups
 {
     public const string Privacidade = "Privacidade";
-    public const string Historico = "Histórico e Área de Transferência";
+    public const string Historico = "Histórico de Atividades";
     public const string Permissoes = "Permissões de Apps";
     public const string Edge = "Microsoft Edge";
     public const string EdgeLegado = "Microsoft Edge (legado)";

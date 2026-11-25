@@ -36,7 +36,6 @@ public sealed class FixItemViewModel : ObservableObject
         var id when id.StartsWith("phone")   => "📱 Dispositivos Móveis",
         var id when id.StartsWith("taskbar") => "📌 Barra de Tarefas",
         var id when id.StartsWith("sync")    => "🔄 Sincronização",
-        "privacy-clipboard"                  => "📋 Histórico e Clipboard",
         "privacy-suggestions"                => "💬 Sugestões e Publicidade",
         "privacy-app-caps"                   => "🔒 Permissões de Apps",
         "privacy-cortana"                    => "🔍 Cortana e Busca",

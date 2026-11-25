@@ -22,6 +22,27 @@ public sealed class Oosu10CatalogTests
     }
 
     [Fact]
+    public void Catalog_nao_mexe_no_historico_da_area_de_transferencia()
+    {
+        Assert.DoesNotContain(Catalog, t =>
+            t.Id.Contains("clipboard", StringComparison.OrdinalIgnoreCase));
+
+        foreach (var tweak in Catalog)
+        {
+            var text = string.Join(" ", tweak.Title, tweak.Detail, tweak.Explanation, tweak.Note);
+            Assert.DoesNotContain("Win+V", text, StringComparison.OrdinalIgnoreCase);
+
+            foreach (var action in tweak.Enable.Concat(tweak.Restore))
+            {
+                Assert.False(
+                    action.Path.Contains("Clipboard", StringComparison.OrdinalIgnoreCase) ||
+                    action.Name.Contains("Clipboard", StringComparison.OrdinalIgnoreCase),
+                    $"{tweak.Id}: ação de clipboard não permitida -> {action.Describe()}");
+            }
+        }
+    }
+
+    [Fact]
     public void Every_item_has_title_detail_and_at_least_one_action()
     {
         Assert.All(Catalog, t =>

@@ -21,7 +21,7 @@ public sealed class FixCatalogTests
     {
         var allowlist = new[] {
             "mouse", "trim", "temp", "shaders", "syscache",
-            "privacy-clipboard", "privacy-suggestions", "privacy-app-caps",
+            "privacy-suggestions", "privacy-app-caps",
             "privacy-cortana", "privacy-spynet", "privacy-update-p2p", "privacy-explorer",
             "copilot-disable", "copilot-recall", "copilot-taskbar",
             "phone-link", "phone-suggestions",

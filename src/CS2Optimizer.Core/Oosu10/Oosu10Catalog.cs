@@ -163,20 +163,7 @@ public static class Oosu10Catalog
             BothDw(@"Software\Policies\Microsoft\Biometrics", "Enabled", 1),
             note: "Não recomendado: você perde o login por rosto/impressão digital."));
 
-        // ------------------------------------------- Histórico e Área de Transferência
-        list.Add(T("clipboard-history", Historico,
-            "Desativar o histórico da área de transferência",
-            "Desliga o Win+V e o histórico de itens copiados.",
-            Advice.Recomendado, true,
-            BothDw(@"Software\Microsoft\Clipboard", "EnableClipboardHistory", 0),
-            explanation: "O copiar/colar normal continua funcionando; só o histórico (Win+V) e a lista de itens recentes são desligados."));
-
-        list.Add(T("clipboard-machine", Historico,
-            "Bloquear o histórico de clipboard para a máquina toda",
-            "Política AllowClipboardHistory = 0 para todos os usuários.",
-            Advice.Recomendado, true,
-            BothDw(@"Software\Policies\Microsoft\Windows\System", "AllowClipboardHistory", 0)));
-
+        // ------------------------------------------------- Histórico de Atividades
         list.Add(T("activity-feed", Historico,
             "Desativar gravação da atividade do usuário",
             "Desliga o feed de atividades (Timeline).",
@@ -194,12 +181,6 @@ public static class Oosu10Catalog
             "Grava UploadUserActivities = 0.",
             Advice.Recomendado, true,
             BothDw(@"Software\Policies\Microsoft\Windows\System", "UploadUserActivities", 0)));
-
-        list.Add(T("cross-device-clipboard", Historico,
-            "Parar de sincronizar o clipboard entre dispositivos",
-            "Grava AllowCrossDeviceClipboard = 0.",
-            Advice.Recomendado, true,
-            BothDw(@"Software\Policies\Microsoft\Windows\System", "AllowCrossDeviceClipboard", 0)));
 
         // ------------------------------------------------------------ Permissões de Apps
         list.Add(T("cap-account-info", Permissoes,

@@ -149,6 +149,9 @@ reverter.
 - O catálogo é mantido em `src/CS2Optimizer.Core/Oosu10/Oosu10Catalog.cs`
   (não é lido do `.reg` em tempo de execução, porque o arquivo exporta o
   estado da máquina e mistura linhas ativas com comentadas).
+- O programa **não** desativa o histórico da área de transferência (Win+V),
+  não bloqueia esse histórico por política e não mexe na sincronização de
+  clipboard entre dispositivos.
 
 ## Estrutura
 
