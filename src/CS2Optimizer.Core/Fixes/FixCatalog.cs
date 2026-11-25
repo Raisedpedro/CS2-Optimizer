@@ -22,9 +22,10 @@ public static class FixCategories
 /// <summary>
 /// Catálogo de correções (seção 7 do plano). Cada item só é criado se estiver
 /// aplicável ao retrato da máquina — é isso que faz o item desaparecer depois
-/// de aplicado. Privacidade/telemetria do Windows NÃO mora aqui: mora no
-/// catálogo do O&O ShutUp10 (<c>Oosu10Catalog</c>), que lê o estado real de
-/// cada ajuste. Não recrie essas correções aqui.
+/// de aplicado. As chaves de privacidade/telemetria já cobertas pelo O&O
+/// ShutUp10 moram somente em <c>Oosu10Catalog</c>: duplicá-las aqui contaria a
+/// mesma pendência duas vezes e deixaria dois caminhos de desfazer. Aqui ficam
+/// apenas os valores de privacidade que o catálogo do O&O não cobre.
 /// </summary>
 public static class FixCatalog
 {
@@ -33,6 +34,12 @@ public static class FixCatalog
     // fora: elas sempre podem rodar, então nunca "zeram" depois de aplicadas.
     private static readonly string[] RecommendedOptionalIds = {
         "mouse"
+    };
+
+    // Privacidade nunca entra no botão único "Aplicar recomendadas": o usuário
+    // deve escolher esses itens na aba própria, com a explicação completa.
+    private static readonly string[] NeverRecommendIds = {
+        "telemetry-dumps", "telemetry-voz", "telemetry-erros"
     };
 
     public static IReadOnlyList<FixDefinition> Build(FixContext ctx)
@@ -193,32 +200,8 @@ public static class FixCatalog
                 }));
         }
 
-        // ---------------- Windows opcional ----------------
-        if (!ctx.BackgroundAppsDisabled)
-        {
-            fixes.Add(Make("bgapps",
-                "Desativar apps em segundo plano",
-                "permitido",
-                "Impedir que apps do Windows rodem em segundo plano? Pode atrasar notificações da Microsoft Store.",
-                "Impede apps da Store/Windows de rodar em segundo plano, liberando RAM/CPU. Pode atrasar notificações e sincronização da Store. " +
-                "Como volta: o Desfazer regrava o valor anterior.",
-                FixLevel.Optional, false, FixCategories.Sistema,
-                (c, e) =>
-                {
-                    if (c.IsWin11)
-                    {
-                        e.Registry.SetValue(@"HKLM\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy",
-                            "LetAppsRunInBackground", 2, RegistryValueKind.DWord);
-                    }
-                    else
-                    {
-                        e.Registry.SetValue(
-                            @"HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications",
-                            "GlobalUserDisabled", 1, RegistryValueKind.DWord);
-                    }
-                    return Task.CompletedTask;
-                }));
-        }
+        // Apps em segundo plano são gerenciados pelo ajuste "background-apps" do
+        // O&O ShutUp10; duplicar a escrita aqui gerava dois desfazeres conflitantes.
 
         if (!(ctx.SystemResponsiveness == 0 && ctx.NetworkThrottling == -1))
         {
@@ -367,7 +350,11 @@ public static class FixCatalog
                     await StopSteamCs2Async(e);
                     foreach (var path in c.ShaderPaths)
                     {
-                        try { DeleteDirectoryContents(path, e); }
+                        try
+                        {
+                            var safe = SafeCleanupDirectory(path, e);
+                            if (safe is not null) DeleteDirectoryContents(safe, e);
+                        }
                         catch (Exception ex) { e.Log.Warn($"  não consegui limpar {path}: {ex.Message}"); }
                     }
 
@@ -393,14 +380,16 @@ public static class FixCatalog
             fixes.Add(Make("temp",
                 $"Limpar %TEMP% (~{ctx.TempMB:0.#} MB)",
                 $"~{ctx.TempMB:0.#} MB",
-                $"Limpar a pasta TEMP do usuário (~{ctx.TempMB:0.#} MB)?",
+                $"Limpar a pasta TEMP do usuário (~{ctx.TempMB:0.#} MB)?\r\n" +
+                (Environment.GetEnvironmentVariable("TEMP") ?? Path.GetTempPath()),
                 "Apaga o conteúdo de %TEMP% do usuário. Libera espaço e não afeta o jogo em execução (arquivos em uso são ignorados). " +
                 "Não há o que restaurar: é lixo temporário.",
                 FixLevel.Optional, false, FixCategories.Limpeza,
                 (c, e) =>
                 {
-                    var temp = Environment.GetEnvironmentVariable("TEMP") ?? Path.GetTempPath();
-                    DeleteDirectoryContents(temp, e);
+                    var temp = SafeCleanupDirectory(
+                        Environment.GetEnvironmentVariable("TEMP") ?? Path.GetTempPath(), e);
+                    if (temp is not null) DeleteDirectoryContents(temp, e);
                     return Task.CompletedTask;
                 }));
         }
@@ -417,11 +406,14 @@ public static class FixCatalog
                 await StopSteamCs2Async(e);
                 await RunIgnoredAsync(e, "ipconfig.exe", new[] { "/flushdns" }, "Flush DNS");
 
-                var windowsTemp = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp");
-                if (Directory.Exists(windowsTemp)) DeleteDirectoryContents(windowsTemp, e);
+                var windowsTemp = SafeCleanupDirectory(
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp"), e);
+                if (windowsTemp is not null && Directory.Exists(windowsTemp))
+                    DeleteDirectoryContents(windowsTemp, e);
                 foreach (var path in c.Steam.SteamCachePaths)
                 {
-                    if (Directory.Exists(path)) DeleteDirectoryContents(path, e);
+                    var safe = SafeCleanupDirectory(path, e);
+                    if (safe is not null && Directory.Exists(safe)) DeleteDirectoryContents(safe, e);
                 }
             }));
 
@@ -434,9 +426,10 @@ public static class FixCatalog
             FixLevel.Optional, false, FixCategories.Limpeza,
             (c, e) =>
             {
-                var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "Microsoft", "Windows", "INetCache");
-                if (Directory.Exists(dir)) DeleteDirectoryContents(dir, e);
+                var dir = SafeCleanupDirectory(
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "Microsoft", "Windows", "INetCache"), e);
+                if (dir is not null && Directory.Exists(dir)) DeleteDirectoryContents(dir, e);
                 return Task.CompletedTask;
             }));
 
@@ -479,120 +472,41 @@ public static class FixCatalog
                         "Microsoft", "Windows", "DeliveryOptimization", "Cache")
                 };
 
-                foreach (var dir in alvos)
+                foreach (var target in alvos)
                 {
                     try
                     {
-                        if (Directory.Exists(dir)) DeleteDirectoryContents(dir, e);
+                        var dir = SafeCleanupDirectory(target, e);
+                        if (dir is not null && Directory.Exists(dir)) DeleteDirectoryContents(dir, e);
                     }
                     catch (Exception ex)
                     {
-                        e.Log.Warn($"  não consegui limpar {dir}: {ex.Message}");
+                        e.Log.Warn($"  não consegui limpar {target}: {ex.Message}");
                     }
                 }
 
                 return Task.CompletedTask;
             }));
 
-        // ---------------- Telemetria (tudo reversível pelo backup) ----------------
-        if (ctx.TelemetryServiceStart != 4 || ctx.TelemetryWapStart != 4)
+        // ---------------- Telemetria complementar ----------------
+        // DiagTrack, AllowTelemetry, CEIP, ID de publicidade, histórico de
+        // atividades, WER\Disabled e afins são do Oosu10Catalog. Só o que ele
+        // não cobre fica aqui, para não haver contagem dupla nem dois desfazeres.
+
+        if (ctx.TelemetryDumpLimit != 1)
         {
-            var state = new List<string>();
-            if (ctx.TelemetryServiceStart != 4) state.Add("DiagTrack ligado");
-            if (ctx.TelemetryWapStart != 4) state.Add("WAP Push ligado");
-
-            fixes.Add(Make("telemetry-servico",
-                "Desativar serviço de telemetria (DiagTrack)",
-                string.Join(", ", state),
-                "Parar e desativar o DiagTrack (Experiências do Usuário Conectado) e o WAP Push?\r\n" +
-                "É daqui que sai a maior parte dos dados de uso enviados para a Microsoft.\r\n" +
-                "Não mexe em Windows Update, Defender, Store, Xbox nem em login.",
-                "Para e desativa os serviços DiagTrack e dmwappushservice. É daqui que sai a maior parte dos dados de uso enviados à Microsoft. " +
-                "Não afeta Windows Update, Defender, Store, Xbox ou login. Como volta: o Desfazer restaura o Start e o backup .reg dos serviços.",
-                FixLevel.Safe, false, FixCategories.Privacidade,
-                async (c, e) =>
-                {
-                    foreach (var service in new[] { "DiagTrack", "dmwappushservice" })
-                    {
-                        try
-                        {
-                            e.Registry.SetValue(
-                                $@"HKLM\SYSTEM\CurrentControlSet\Services\{service}",
-                                "Start", 4, RegistryValueKind.DWord);
-                        }
-                        catch (Exception ex)
-                        {
-                            e.Log.Warn($"  não consegui desativar {service}: {ex.Message}");
-                        }
-                        await RunIgnoredAsync(e, "sc.exe", new[] { "stop", service }, "Parando " + service);
-                    }
-                }));
-        }
-
-        if (ctx.TelemetryLevel != 0 || ctx.TelemetryCeip != 0)
-        {
-            var state = ctx.TelemetryLevel != 0
-                ? (ctx.TelemetryLevel is null ? "padrão do Windows" : $"nível {ctx.TelemetryLevel}")
-                : "CEIP (experiência do usuário) ligado";
-
-            fixes.Add(Make("telemetry-dados",
-                "Dados de diagnóstico no mínimo",
-                state,
-                "Deixar o envio de diagnóstico no mínimo (AllowTelemetry = 0) e desligar o CEIP?\r\n" +
-                "No Windows Home/Pro o sistema ainda manda o pacote 'obrigatório', mas para de mandar o opcional " +
-                "(apps abertos, uso do navegador, tempo de tela). Windows Update continua normal.",
-                "Coloca AllowTelemetry=0 e desliga CEIP/limites de coleta. No Windows Home/Pro ainda existe o pacote obrigatório, mas o opcional deixa de ser enviado. " +
-                "Windows Update continua normal. Não afeta FPS. Como volta: o Desfazer regrava os valores anteriores.",
+            fixes.Add(Make("telemetry-dumps",
+                "Limitar coleta de dumps de diagnóstico",
+                ctx.TelemetryDumpLimit is null ? "padrão do Windows" : $"LimitDumpCollection = {ctx.TelemetryDumpLimit}",
+                "Manter o limite de coleta de despejos de memória enviados com os diagnósticos?",
+                "Limita a coleta de dumps para reduzir o volume de dados de diagnóstico. " +
+                "O nível AllowTelemetry e o CEIP são ajustados na aba O&O ShutUp10. " +
+                "Windows Update e Defender continuam normais. Como volta: o Desfazer regrava o valor anterior.",
                 FixLevel.Safe, false, FixCategories.Privacidade,
                 (c, e) =>
                 {
-                    e.Registry.SetValue(@"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection",
-                        "AllowTelemetry", 0, RegistryValueKind.DWord);
-                    e.Registry.SetValue(@"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection",
-                        "LimitDiagnosticLogCollection", 1, RegistryValueKind.DWord);
                     e.Registry.SetValue(@"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection",
                         "LimitDumpCollection", 1, RegistryValueKind.DWord);
-                    e.Registry.SetValue(
-                        @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection",
-                        "AllowTelemetry", 0, RegistryValueKind.DWord);
-                    e.Registry.SetValue(@"HKLM\SOFTWARE\Policies\Microsoft\SQMClient\Windows",
-                        "CEIPEnable", 0, RegistryValueKind.DWord);
-                    return Task.CompletedTask;
-                }));
-        }
-
-        if (ctx.TelemetryAdId != 0 || ctx.TelemetryFeed != 0)
-        {
-            fixes.Add(Make("telemetry-rastreio",
-                "Desativar rastreio de uso (ID de publicidade)",
-                "rastreio ligado",
-                "Desligar ID de publicidade, experiências personalizadas, histórico de atividades e a coleta de escrita?\r\n" +
-                "São os rastreadores do dia a dia (não o diagnóstico do sistema). Não afeta login, Store nem OneDrive.",
-                "Desliga ID de publicidade, experiências personalizadas, histórico de atividades e coleta de escrita. São rastreadores do dia a dia, não o diagnóstico do sistema. " +
-                "Não afeta login, Store ou OneDrive e não muda FPS. Como volta: o Desfazer regrava os valores anteriores.",
-                FixLevel.Safe, false, FixCategories.Privacidade,
-                (c, e) =>
-                {
-                    e.Registry.SetValue(@"HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo",
-                        "Enabled", 0, RegistryValueKind.DWord);
-                    e.Registry.SetValue(@"HKCU\Software\Microsoft\Windows\CurrentVersion\Privacy",
-                        "TailoredExperiencesWithDiagnosticDataEnabled", 0, RegistryValueKind.DWord);
-                    e.Registry.SetValue(@"HKCU\Software\Microsoft\Siuf\Rules",
-                        "NumberOfSIUFInPeriod", 0, RegistryValueKind.DWord);
-                    e.Registry.SetValue(@"HKCU\Software\Microsoft\Siuf\Rules",
-                        "PeriodInNanoSeconds", 0, RegistryValueKind.DWord);
-                    e.Registry.SetValue(@"HKLM\SOFTWARE\Policies\Microsoft\Windows\System",
-                        "EnableActivityFeed", 0, RegistryValueKind.DWord);
-                    e.Registry.SetValue(@"HKLM\SOFTWARE\Policies\Microsoft\Windows\System",
-                        "PublishUserActivities", 0, RegistryValueKind.DWord);
-                    e.Registry.SetValue(@"HKLM\SOFTWARE\Policies\Microsoft\Windows\System",
-                        "UploadUserActivities", 0, RegistryValueKind.DWord);
-                    e.Registry.SetValue(@"HKCU\Software\Microsoft\Input\TIPC",
-                        "Enabled", 0, RegistryValueKind.DWord);
-                    e.Registry.SetValue(@"HKCU\Software\Microsoft\InputPersonalization",
-                        "RestrictImplicitTextCollection", 1, RegistryValueKind.DWord);
-                    e.Registry.SetValue(@"HKCU\Software\Microsoft\InputPersonalization",
-                        "RestrictImplicitInkCollection", 1, RegistryValueKind.DWord);
                     return Task.CompletedTask;
                 }));
         }
@@ -612,34 +526,36 @@ public static class FixCatalog
                     e.Registry.SetValue(
                         @"HKCU\Software\Microsoft\Speech_OneCore\Settings\OnlineSpeechPrivacy",
                         "HasAccepted", 0, RegistryValueKind.DWord);
-                    e.Registry.SetValue(@"HKLM\SOFTWARE\Policies\Microsoft\InputPersonalization",
-                        "AllowInputPersonalization", 0, RegistryValueKind.DWord);
                     return Task.CompletedTask;
                 }));
         }
 
-        if (ctx.TelemetryWer != 1 ||
-            (ctx.TelemetryCompatTask is not ("Disabled" or "Ausente")))
+        if (ctx.TelemetryWerAdditional != 1 ||
+            ctx.TelemetryCompatTask is not ("Disabled" or "Ausente") ||
+            ctx.ProgramDataUpdaterTask is not ("Disabled" or "Ausente"))
         {
-            var state = ctx.TelemetryWer != 1 ? "envio de relatórios ligado" : "tarefa de compatibilidade ativa";
+            var state = ctx.TelemetryWerAdditional != 1
+                ? "envio de dados adicionais ligado"
+                : "tarefa de compatibilidade ativa";
             fixes.Add(Make("telemetry-erros",
                 "Parar envio de relatórios de erro (WER)",
                 state,
-                "Desligar o envio de relatórios de erro (WER) para a Microsoft e as tarefas 'Experiência de Aplicativos'?\r\n" +
-                "O Windows continua mostrando o erro na tela; só para de empacotar e enviar. Jogos e programas não são afetados.",
-                "Desliga o envio de relatórios de erro (WER) e as tarefas de compatibilidade. O Windows continua mostrando o erro; só para de empacotar/enviar. " +
-                "Jogos e programas não são afetados. Como volta: o Desfazer regrava os valores e reative as tarefas manualmente se quiser.",
+                "Parar de incluir dados adicionais nos relatórios de erro e desativar as tarefas 'Experiência de Aplicativos'?\r\n" +
+                "O Windows continua mostrando o erro na tela; o desligamento do WER em si fica na aba O&O ShutUp10.",
+                "Para de incluir dados adicionais nos relatórios e desativa as tarefas de compatibilidade. " +
+                "O valor WER\\Disabled é aplicado na aba O&O. O Windows continua mostrando o erro na tela; jogos e programas não são afetados. " +
+                "Como volta: o Desfazer regrava os valores; as tarefas precisam ser reativadas manualmente.",
                 FixLevel.Safe, false, FixCategories.Privacidade,
                 async (c, e) =>
                 {
-                    e.Registry.SetValue(@"HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting",
-                        "Disabled", 1, RegistryValueKind.DWord);
+                    // O valor Disabled é do catálogo do O&O; aqui só os dados
+                    // adicionais e as tarefas que ele não alcança.
                     e.Registry.SetValue(@"HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting",
                         "DontSendAdditionalData", 1, RegistryValueKind.DWord);
 
                     foreach (var task in new[] { "Microsoft Compatibility Appraiser", "ProgramDataUpdater" })
                     {
-                        await RunIgnoredAsync(e, "schtasks.exe",
+                        await RunCheckedAsync(e, "schtasks.exe",
                             new[] { "/change", "/tn", @"\Microsoft\Windows\Application Experience\" + task, "/disable" },
                             "Desativando tarefa");
                     }
@@ -794,8 +710,9 @@ public static class FixCatalog
             Level = level,
             RequiresReboot = requiresReboot,
             Category = category,
-            Recommended = level == FixLevel.Safe ||
-                          RecommendedOptionalIds.Contains(id, StringComparer.OrdinalIgnoreCase),
+            Recommended = !NeverRecommendIds.Contains(id, StringComparer.OrdinalIgnoreCase) &&
+                          (level == FixLevel.Safe ||
+                           RecommendedOptionalIds.Contains(id, StringComparer.OrdinalIgnoreCase)),
             ApplyAsync = apply
         };
     }
@@ -868,6 +785,50 @@ public static class FixCatalog
         }
 
         await Task.Delay(3000, e.CancellationToken);
+    }
+
+    /// <summary>
+    /// Caminhos de limpeza vêm de TEMP, do registro da Steam e de arquivos VDF.
+    /// Como o app roda elevado, canonicaliza e recusa raízes de unidade e links
+    /// (junction/symlink) antes de apagar qualquer coisa recursivamente.
+    /// </summary>
+    private static string? SafeCleanupDirectory(string path, FixExecutionContext e)
+    {
+        try
+        {
+            var full = Path.GetFullPath(path);
+            var trim = full.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var forbidden = new[]
+            {
+                Path.GetPathRoot(full) ?? "",
+                Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+            };
+            if (forbidden.Any(r => !string.IsNullOrWhiteSpace(r) &&
+                string.Equals(Path.GetFullPath(r).TrimEnd(Path.DirectorySeparatorChar,
+                    Path.AltDirectorySeparatorChar), trim, StringComparison.OrdinalIgnoreCase)))
+            {
+                e.Log.Warn("  limpeza ignorada (pasta crítica): " + full);
+                return null;
+            }
+
+            var dir = new DirectoryInfo(full);
+            for (var current = dir; current is not null; current = current.Parent)
+            {
+                if (current.Exists && (current.Attributes & FileAttributes.ReparsePoint) != 0)
+                {
+                    e.Log.Warn("  limpeza ignorada (link/junction): " + current.FullName);
+                    return null;
+                }
+            }
+
+            return full;
+        }
+        catch (Exception ex)
+        {
+            e.Log.Warn("  limpeza ignorada (caminho inválido: " + ex.Message + ")");
+            return null;
+        }
     }
 
     private static void DeleteDirectoryContents(string path, FixExecutionContext e)

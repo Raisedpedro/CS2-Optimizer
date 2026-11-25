@@ -96,6 +96,7 @@ public sealed class BackupService
 
         await ProtectBackupRootAsync(cancellationToken);
         Directory.CreateDirectory(dir);
+        var failures = 0;
 
         try
         {
@@ -105,11 +106,15 @@ public sealed class BackupService
             if (bcd.Started && bcd.ExitCode == 0)
                 _log.Ok("BCD exportado.");
             else
+            {
                 _log.Warn("Não consegui exportar o BCD.");
+                failures++;
+            }
         }
         catch
         {
             _log.Warn("Não consegui exportar o BCD.");
+            failures++;
         }
 
         foreach (var export in RegistryExports.Map)
@@ -121,11 +126,15 @@ public sealed class BackupService
                     new[] { "export", export.Value, target, "/y" },
                     "Exportando registro", cancellationToken: cancellationToken);
                 if (!result.Started || result.ExitCode != 0)
+                {
                     _log.Warn($"Não consegui exportar {export.Value}.");
+                    failures++;
+                }
             }
             catch (Exception ex)
             {
                 _log.Warn($"Não consegui exportar {export.Value}: {ex.Message}");
+                failures++;
             }
         }
         _log.Ok("Chaves de registro exportadas.");
@@ -143,6 +152,7 @@ public sealed class BackupService
         catch (Exception ex)
         {
             _log.Warn("Não consegui salvar o plano de energia: " + ex.Message);
+            failures++;
         }
 
         if (createRestorePoint)
@@ -171,6 +181,16 @@ public sealed class BackupService
         else
         {
             _log.Warn("Ponto de restauração: não criado (você escolheu não criar).");
+        }
+
+        // Backup incompleto não pode virar "sucesso": é melhor não aplicar nada
+        // do que aplicar sem poder desfazer.
+        if (failures > 0)
+        {
+            BackupMade = false;
+            throw new InvalidOperationException(
+                $"O backup falhou em {failures} etapa(s). Nenhuma alteração foi aplicada. " +
+                "Verifique o log e tente novamente.");
         }
 
         BackupMade = true;
@@ -244,41 +264,42 @@ public sealed class BackupService
     }
 
     /// <summary>
-    /// Um .reg só é importado se tiver o cabeçalho certo, nenhuma exclusão de chave
-    /// e SOMENTE chaves que o próprio programa exporta.
+    /// Um .reg só é importado se tiver o cabeçalho certo, nenhuma exclusão de
+    /// chave/valor e somente pares chave/valor que o próprio programa escreve.
     /// </summary>
     public static bool TestRegSafe(string file)
     {
+        try { return RegFileSanitizer.TrySanitize(file, null, out _); }
+        catch { return false; }
+    }
+
+    /// <summary>
+    /// Só aceita pastas com o nome padrão imediatamente dentro de uma das raízes
+    /// que o programa usa (Backups, pasta do exe ou Área de Trabalho). Isso impede
+    /// que --revert ou o diálogo de pasta aponte para um bcd.bak arbitrário.
+    /// </summary>
+    public bool IsKnownBackupDirectory(string directory)
+    {
         try
         {
-            var lines = File.ReadAllLines(file);
-            var prefixes = RegistryExports.Map
-                .Select(kv => RegistryExports.ToLongName(kv.Value))
-                .ToArray();
-
-            var first = lines.FirstOrDefault(l => !string.IsNullOrWhiteSpace(l))?.Trim();
-            if (!string.Equals(first, "Windows Registry Editor Version 5.00", StringComparison.Ordinal))
+            var full = Path.GetFullPath(directory)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var name = Path.GetFileName(full);
+            if (!name.StartsWith("CS2-Optimizer-Backup-", StringComparison.OrdinalIgnoreCase))
                 return false;
 
-            foreach (var line in lines)
-            {
-                var t = line.Trim();
-                if (t.StartsWith("[-", StringComparison.Ordinal)) return false;
-                if (!t.StartsWith("[", StringComparison.Ordinal)) continue;
+            var parent = Path.GetDirectoryName(full);
+            if (string.IsNullOrWhiteSpace(parent)) return false;
+            var parentFull = Path.GetFullPath(parent)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
-                var key = t.Trim('[', ']');
-                var ok = prefixes.Any(p =>
-                    string.Equals(key, p, StringComparison.OrdinalIgnoreCase) ||
-                    key.StartsWith(p + "\\", StringComparison.OrdinalIgnoreCase));
-                if (!ok) return false;
-            }
-
-            return true;
+            return new[] { BackupRoot, BaseDirectory, Desktop }
+                .Where(r => !string.IsNullOrWhiteSpace(r))
+                .Any(r => string.Equals(Path.GetFullPath(r)
+                        .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+                    parentFull, StringComparison.OrdinalIgnoreCase));
         }
-        catch
-        {
-            return false;
-        }
+        catch { return false; }
     }
 
     public async Task RestoreBackupAsync(string directory, string? cs2Exe,
@@ -286,7 +307,6 @@ public sealed class BackupService
     {
         if (!Directory.Exists(directory))
             throw new DirectoryNotFoundException($"Pasta de backup não encontrada: {directory}");
-
         // Sem isso, escolher a pasta errada (Documentos, por exemplo) terminava com
         // "backup restaurado com sucesso" sem ter restaurado nada.
         var hasJournal = File.Exists(Path.Combine(directory, "journal.json"));
@@ -300,30 +320,39 @@ public sealed class BackupService
                 "Um backup tem os arquivos que o próprio programa salvou (registro, BCD e/ou plano de energia).\n\n" + directory);
         }
 
+        // Mesmo com arquivos de backup, a pasta precisa ser uma das que o
+        // programa reconhece: --revert não pode importar um bcd.bak arbitrário.
+        if (!IsKnownBackupDirectory(directory))
+            throw new InvalidOperationException(
+                "Por segurança, o desfazer só aceita pastas nomeadas CS2-Optimizer-Backup-<data> " +
+                "dentro da pasta do programa, de Backups\\ ou da Área de Trabalho.\n\n" + directory);
+
         _log.Title("Restaurando de: " + directory);
 
         foreach (var regFile in Directory.GetFiles(directory, "*.reg").OrderBy(f => f))
         {
             var name = Path.GetFileName(regFile);
-            if (hasJournal && (name.Equals("power.reg", StringComparison.OrdinalIgnoreCase) ||
-                               name.Equals("graphics.reg", StringComparison.OrdinalIgnoreCase)))
+            var safeReg = Path.Combine(Path.GetTempPath(),
+                "cs2opt-import-" + Guid.NewGuid().ToString("N") + ".reg");
+            try
             {
-                _log.Log("  ignorado (já incluído no backup): " + name);
-                continue;
-            }
+                if (!RegFileSanitizer.TrySanitize(regFile, safeReg, out var kept) || kept == 0)
+                {
+                    _log.Warn("  RECUSADO (conteúdo fora do esperado): " + name);
+                    continue;
+                }
 
-            if (!TestRegSafe(regFile))
+                var result = await _runner.RunAsync("reg.exe", new[] { "import", safeReg },
+                    "Importando " + name, cancellationToken: cancellationToken);
+                if (result.Started && result.ExitCode == 0)
+                    _log.Log("  importado: " + name);
+                else
+                    _log.Warn("  falhou ao importar: " + name);
+            }
+            finally
             {
-                _log.Warn("  RECUSADO (conteúdo fora do esperado): " + name);
-                continue;
+                try { if (File.Exists(safeReg)) File.Delete(safeReg); } catch { }
             }
-
-            var result = await _runner.RunAsync("reg.exe", new[] { "import", regFile },
-                "Importando " + name, cancellationToken: cancellationToken);
-            if (result.Started && result.ExitCode == 0)
-                _log.Log("  importado: " + name);
-            else
-                _log.Warn("  falhou ao importar: " + name);
         }
 
         RegistryJournal.RestoreFrom(directory, _registry, _log.Log);

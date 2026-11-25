@@ -61,13 +61,41 @@ public sealed class RegistryJournalTests
             journal.SaveTo(dir);
 
             var registry = new RecordingRegistry();
-            var restored = RegistryJournal.RestoreFrom(dir, registry);
+            var restored = RegistryJournal.RestoreFrom(dir, registry,
+                allow: (path, name) => path.EndsWith("CS2OptimizerTest", StringComparison.OrdinalIgnoreCase));
 
             Assert.Equal(3, restored);
             Assert.Equal(3, registry.Operations.Count);
             Assert.StartsWith("SET HKLM\\SOFTWARE\\CS2OptimizerTest\\C", registry.Operations[0]);
             Assert.StartsWith("DEL HKCU\\Software\\CS2OptimizerTest\\B", registry.Operations[1]);
             Assert.StartsWith("SET HKLM\\SOFTWARE\\CS2OptimizerTest\\A", registry.Operations[2]);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void RestoreFrom_recusa_valores_que_o_programa_nunca_escreve()
+    {
+        var dir = NewTempDirectory();
+        try
+        {
+            var journal = new RegistryJournal();
+            journal.AddSnapshot(@"HKLM\SYSTEM\CurrentControlSet\Services\DiagTrack", "ImagePath",
+                new RegistryValueSnapshot(true, RegistryValueKind.String, "cmd.exe /c malicioso"));
+            journal.AddSnapshot(@"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "LimitDumpCollection",
+                new RegistryValueSnapshot(true, RegistryValueKind.DWord, 1));
+            journal.SaveTo(dir);
+
+            var registry = new RecordingRegistry();
+            var restored = RegistryJournal.RestoreFrom(dir, registry);
+
+            Assert.Equal(1, restored);
+            var operation = Assert.Single(registry.Operations);
+            Assert.StartsWith("SET HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection\\LimitDumpCollection", operation);
+            Assert.DoesNotContain("ImagePath", operation);
         }
         finally
         {

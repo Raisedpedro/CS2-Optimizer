@@ -21,6 +21,20 @@ jobs:
     steps:
       - name: Baixar o código
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.release_tag || github.ref }}
+
+      - name: Conferir versão da tag
+        shell: pwsh
+        run: |
+          $tag = "${{ github.event.inputs.release_tag }}"
+          if ([string]::IsNullOrWhiteSpace($tag)) { $tag = "${{ github.ref_name }}" }
+          $expected = $tag.TrimStart("v")
+          $csproj = [xml](Get-Content src/CS2Optimizer.App/CS2Optimizer.App.csproj -Raw)
+          [string]$version = @($csproj.Project.PropertyGroup.Version) | Where-Object { $_ } | Select-Object -First 1
+          if ($version -ne $expected) {
+            throw "Tag $tag não corresponde à versão $version do projeto."
+          }
 
       - name: Instalar .NET 8
         uses: actions/setup-dotnet@v4

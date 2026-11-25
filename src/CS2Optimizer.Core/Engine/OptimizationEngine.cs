@@ -178,7 +178,19 @@ public sealed class OptimizationEngine
         if (!options.SkipBackup && !Backup.BackupMade)
         {
             var stamp = BackupService.NewStamp();
-            await Backup.CreateBackupAsync(stamp, createPoint, cancellationToken);
+            try
+            {
+                await Backup.CreateBackupAsync(stamp, createPoint, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                // Backup incompleto = nada é aplicado. Devolve um resultado comum
+                // para que CLI e interface mostrem a mensagem sem exceção crua.
+                _log.Bad("Backup falhou: " + ex.Message);
+                failed.Add("Backup falhou: " + ex.Message);
+                StatusChanged?.Invoke("Pronto.");
+                return new ApplyResult(applied, skipped, failed, false);
+            }
         }
 
         // 5) Aplicação.
@@ -229,9 +241,13 @@ public sealed class OptimizationEngine
             progress?.Invoke(++done, selected.Count);
         }
 
-        // 6) Journal.
-        if (Backup.CurrentBackupDirectory is not null)
-            _journal.SaveTo(Backup.CurrentBackupDirectory, _log.Log);
+        // 6) Journal. Se falhar, o desfazer ficaria incompleto: avisa o usuário.
+        if (Backup.CurrentBackupDirectory is not null &&
+            !_journal.SaveTo(Backup.CurrentBackupDirectory, _log.Log))
+        {
+            failed.Add("journal.json não pôde ser gravado - o desfazer pode estar incompleto");
+            _log.Bad("Falha ao gravar journal.json; o desfazer pode estar incompleto.");
+        }
 
         NeedReboot |= needReboot;
         if (applied.Count > 0)

@@ -36,8 +36,17 @@ public sealed class AppLogger
             _entries.Add(entry);
             try
             {
+                // Uma mensagem com \r\n não pode forjar linhas novas no arquivo.
+                var safe = text.Replace('\r', ' ').Replace('\n', ' ');
+                var info = new FileInfo(LogFile);
+                if (info.Exists && info.Length > 1024 * 1024)
+                {
+                    var old = LogFile + ".old";
+                    if (File.Exists(old)) File.Delete(old);
+                    File.Move(LogFile, old);
+                }
                 File.AppendAllText(LogFile,
-                    $"{entry.Time:HH:mm:ss}  {text}{Environment.NewLine}", Encoding.UTF8);
+                    $"{entry.Time:HH:mm:ss}  {safe}{Environment.NewLine}", Encoding.UTF8);
             }
             catch { }
         }

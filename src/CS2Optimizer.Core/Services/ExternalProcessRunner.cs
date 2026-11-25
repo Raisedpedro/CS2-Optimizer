@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 
 namespace CS2Optimizer.Core.Services;
@@ -22,7 +23,7 @@ public sealed class ExternalProcessRunner
         var stderr = new StringBuilder();
         var psi = new ProcessStartInfo
         {
-            FileName = fileName,
+            FileName = ResolveSystemTool(fileName),
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardOutput = true,
@@ -130,23 +131,52 @@ public sealed class ExternalProcessRunner
         }
     }
 
+    /// <summary>
+    /// Ferramentas do Windows são sempre resolvidas para um caminho absoluto em
+    /// System32 (ou na pasta do Windows). O CreateProcess, quando recebe só o
+    /// nome, procura primeiro na pasta do executável — que é gravável no modo
+    /// portátil — e isso permitiria substituir reg.exe/bcdedit.exe por um
+    /// executável plantado ao lado do CS2Optimizer.exe.
+    /// </summary>
+    public static string ResolveSystemTool(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName)) return fileName;
+        var name = fileName.Trim();
+        if (Path.IsPathRooted(name) ||
+            name.Contains(Path.DirectorySeparatorChar) ||
+            name.Contains(Path.AltDirectorySeparatorChar))
+            return name;
+
+        var system = Path.Combine(Environment.SystemDirectory, name);
+        if (File.Exists(system)) return system;
+
+        var windows = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), name);
+        if (File.Exists(windows)) return windows;
+
+        return FindOnPath(name) ?? name;
+    }
+
+    /// <summary>Procura um executável no PATH, devolvendo sempre um caminho absoluto.</summary>
     public static string? FindOnPath(string fileName)
     {
-        if (File.Exists(fileName)) return fileName;
+        if (string.IsNullOrWhiteSpace(fileName)) return null;
+        if (Path.IsPathRooted(fileName)) return File.Exists(fileName) ? fileName : null;
+
+        var system = Path.Combine(Environment.SystemDirectory, fileName);
+        if (File.Exists(system)) return system;
 
         var paths = (Environment.GetEnvironmentVariable("PATH") ?? "")
-            .Split(System.IO.Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
+            .Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
         foreach (var dir in paths)
         {
             try
             {
-                var candidate = System.IO.Path.Combine(dir.Trim(), fileName);
-                if (File.Exists(candidate)) return candidate;
+                var candidate = Path.Combine(dir.Trim(), fileName);
+                if (File.Exists(candidate)) return Path.GetFullPath(candidate);
             }
             catch { }
         }
 
-        var system32 = System.IO.Path.Combine(Environment.SystemDirectory, fileName);
-        return File.Exists(system32) ? system32 : null;
+        return null;
     }
 }

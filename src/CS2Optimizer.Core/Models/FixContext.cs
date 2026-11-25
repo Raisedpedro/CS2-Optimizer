@@ -66,6 +66,13 @@ public sealed class FixContext
     public int? TelemetryVoice { get; set; }
     public string TelemetryCompatTask { get; set; } = "Ausente";
 
+    // Valores complementares que o catálogo do O&O não cobre.
+    public int? TelemetryDumpLimit { get; set; }
+    public int? TelemetryTailored { get; set; }
+    public int? TelemetryTipc { get; set; }
+    public int? TelemetryWerAdditional { get; set; }
+    public string ProgramDataUpdaterTask { get; set; } = "Ausente";
+
     public MitigationState Mit { get; set; } = new(
         "desconhecida", "Desconhecido", null, null, null, null,
         true, false, false, "", Array.Empty<string>(), Array.Empty<string>());

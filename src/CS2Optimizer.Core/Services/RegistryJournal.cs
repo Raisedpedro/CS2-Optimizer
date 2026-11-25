@@ -81,14 +81,25 @@ public sealed class RegistryJournal
         {
             Directory.CreateDirectory(backupDirectory);
             var file = System.IO.Path.Combine(backupDirectory, "journal.json");
+            var temp = file + ".tmp";
             var all = LoadFile(file);
             all.AddRange(_entries);
-            File.WriteAllText(file, JsonSerializer.Serialize(all, JsonOptions), System.Text.Encoding.UTF8);
+            File.WriteAllText(temp, JsonSerializer.Serialize(all, JsonOptions), System.Text.Encoding.UTF8);
+            // Confere o que foi gravado antes de substituir o journal anterior.
+            var written = LoadFile(temp);
+            if (written.Count != all.Count) throw new IOException("journal.json ficou incompleto.");
+            File.Move(temp, file, overwrite: true);
             _entries.Clear();
             return true;
         }
         catch (Exception ex)
         {
+            try
+            {
+                var leftover = System.IO.Path.Combine(backupDirectory, "journal.json.tmp");
+                if (File.Exists(leftover)) File.Delete(leftover);
+            }
+            catch { }
             log?.Invoke("Não consegui gravar os dados de desfazer: " + ex.Message, LogLevel.Warn);
             return false;
         }
@@ -109,21 +120,36 @@ public sealed class RegistryJournal
         }
     }
 
-    /// <summary>Desfaz o journal de uma pasta de backup. Devolve quantos valores restaurou.</summary>
-    public static int RestoreFrom(string backupDirectory, IRegistryAccess registry, Action<string, LogLevel>? log = null)
+    /// <summary>
+    /// Desfaz o journal de uma pasta de backup. Devolve quantos valores restaurou.
+    /// Por padrão só aceita pares (chave, valor) que o próprio programa escreve —
+    /// <paramref name="allow"/> existe apenas para testes com chaves fictícias.
+    /// </summary>
+    public static int RestoreFrom(string backupDirectory, IRegistryAccess registry,
+        Action<string, LogLevel>? log = null,
+        Func<string, string, bool>? allow = null)
     {
         var file = System.IO.Path.Combine(backupDirectory, "journal.json");
         if (!File.Exists(file)) return 0;
 
+        var policy = allow ?? RegistryWriteAllowlist.IsAllowed;
         var entries = LoadFile(file);
         entries.Reverse(); // do mais novo para o mais antigo
         var restored = 0;
+        var recusados = 0;
 
         foreach (var entry in entries)
         {
             try
             {
                 var parsed = RegistryService.ParsePath(entry.Path);
+                if (!policy(parsed.Normalized, entry.Name))
+                {
+                    recusados++;
+                    log?.Invoke($"  RECUSADO (fora da lista de valores do programa): " +
+                                $"{entry.Path} : {entry.Name}", LogLevel.Warn);
+                    continue;
+                }
 
                 if (entry.Existed)
                 {
@@ -147,7 +173,8 @@ public sealed class RegistryJournal
         }
 
         log?.Invoke($"  Desfazer: {restored} valor(es) de registro devolvido(s) ao estado anterior " +
-                    "(valores criados pelo programa foram apagados).", LogLevel.Ok);
+                    $"(valores criados pelo programa foram apagados; {recusados} recusado(s) por não pertencerem ao programa).",
+                    LogLevel.Ok);
         return restored;
     }
 

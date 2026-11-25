@@ -91,6 +91,9 @@ public sealed class MainViewModel : ObservableObject
         _interaction = interaction;
         _dispatcher = Application.Current?.Dispatcher ?? Dispatcher.CurrentDispatcher;
         _windowsDefaultText = services.Mitigation.GetWindowsDefaultText();
+        if (UpdateSettings.LastLoadFailed)
+            services.Logger.Warn("config.json estava corrompido: preferências voltaram ao padrão. " +
+                                 "O arquivo original foi renomeado para config.json.bad.");
 
         ScanCommand = new AsyncRelayCommand(ScanAsync, () => !IsBusy);
         ApplyRecommendedCommand = new AsyncRelayCommand(ApplyRecommendedAsync, () => !IsBusy && HasRecommendedWork);
@@ -973,7 +976,8 @@ public sealed class MainViewModel : ObservableObject
         question.AppendLine($"• Correções recomendadas: {fixes.Count}");
         question.AppendLine($"• Ajustes do O&O recomendados para CS2 (ainda inativos): {tweaks.Count}");
         question.AppendLine();
-        question.AppendLine("Itens opcionais, de risco e os marcados como \"evitar\" ficam de fora.");
+        question.AppendLine("Itens de risco e os marcados como \"evitar\" ficam de fora. " +
+                            "Da lista de opcionais entra apenas a aceleração do mouse, marcada como recomendada para CS2.");
         question.AppendLine("Cada escrita passa pelo backup e pode ser desfeita em Backups / Desfazer.");
         question.AppendLine("Se algo exigir reinício, o aviso aparece no fim.");
 
@@ -1037,11 +1041,13 @@ public sealed class MainViewModel : ObservableObject
                     !bloqueados.Any(b => f.StartsWith(b.Title, StringComparison.Ordinal))));
                 blockedTweaks.AddRange(bloqueados.Select(t => t.Title));
                 MarkBlockedTweaks(oosu);
-                needReboot |= tweaks.Any(t => t.RequiresReboot);
+                needReboot |= tweaks.Any(t => t.RequiresReboot && oosu.Applied.Any(applied =>
+                    string.Equals(applied, t.Title, StringComparison.OrdinalIgnoreCase)));
             }
 
-            if (_services.Backup.CurrentBackupDirectory is not null)
-                _services.Journal.SaveTo(_services.Backup.CurrentBackupDirectory, _services.Logger.Log);
+            if (_services.Backup.CurrentBackupDirectory is not null &&
+                !_services.Journal.SaveTo(_services.Backup.CurrentBackupDirectory, _services.Logger.Log))
+                _services.Logger.Bad("journal.json não pôde ser gravado; o desfazer pode estar incompleto.");
 
             if (appliedFixes.Count > 0)
                 RecordSessionChange("Aplicado", $"{appliedFixes.Count} correção(ões) recomendada(s)",
@@ -1232,9 +1238,18 @@ public sealed class MainViewModel : ObservableObject
         Status = "Criando backup...";
         StatusDetail = "Salvando registro, BCD e plano de energia.";
         UpdateOperationDetail("Criando backup do registro, BCD e plano de energia...");
-        await _services.Backup.CreateBackupAsync(
-            BackupService.NewStamp(), choice == RestorePointChoice.Yes);
-        return true;
+        try
+        {
+            await _services.Backup.CreateBackupAsync(
+                BackupService.NewStamp(), choice == RestorePointChoice.Yes);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _services.Logger.Bad("Backup falhou: " + ex.Message);
+            _interaction.ShowMessage("Backup", ex.Message, true);
+            return false;
+        }
     }
 
     private async Task ApplyMitigationsAsync()
@@ -1285,8 +1300,9 @@ public sealed class MainViewModel : ObservableObject
             }
 
             _services.Mitigation.Apply(keys);
-            if (_services.Backup.CurrentBackupDirectory is not null)
-                _services.Journal.SaveTo(_services.Backup.CurrentBackupDirectory, _services.Logger.Log);
+            if (_services.Backup.CurrentBackupDirectory is not null &&
+                !_services.Journal.SaveTo(_services.Backup.CurrentBackupDirectory, _services.Logger.Log))
+                _services.Logger.Bad("journal.json não pôde ser gravado; o desfazer pode estar incompleto.");
 
             NeedReboot = true;
             RecordSessionChange("Mitigação", resolution.Name,
@@ -1344,8 +1360,9 @@ public sealed class MainViewModel : ObservableObject
             }
 
             _services.Mitigation.Apply(new[] { "padrao" });
-            if (_services.Backup.CurrentBackupDirectory is not null)
-                _services.Journal.SaveTo(_services.Backup.CurrentBackupDirectory, _services.Logger.Log);
+            if (_services.Backup.CurrentBackupDirectory is not null &&
+                !_services.Journal.SaveTo(_services.Backup.CurrentBackupDirectory, _services.Logger.Log))
+                _services.Logger.Bad("journal.json não pôde ser gravado; o desfazer pode estar incompleto.");
 
             NeedReboot = true;
             RecordSessionChange("Padrão", "Mitigações voltaram ao padrão do Windows",
@@ -1673,8 +1690,9 @@ public sealed class MainViewModel : ObservableObject
                 tweaksToApply, restore: false,
                 log: msg => _services.Logger.Log(msg),
                 progress: ReportProgress));
-            if (_services.Backup.CurrentBackupDirectory is not null)
-                _services.Journal.SaveTo(_services.Backup.CurrentBackupDirectory, _services.Logger.Log);
+            if (_services.Backup.CurrentBackupDirectory is not null &&
+                !_services.Journal.SaveTo(_services.Backup.CurrentBackupDirectory, _services.Logger.Log))
+                _services.Logger.Bad("journal.json não pôde ser gravado; o desfazer pode estar incompleto.");
 
             if (result.Applied.Count > 0)
             {
@@ -1685,7 +1703,8 @@ public sealed class MainViewModel : ObservableObject
                     UiBrushes.Safe);
             }
 
-            NeedReboot = selected.Any(t => t.RequiresReboot) || NeedReboot;
+            NeedReboot = tweaksToApply.Any(t => t.RequiresReboot && result.Applied.Any(applied =>
+                string.Equals(applied, t.Title, StringComparison.OrdinalIgnoreCase))) || NeedReboot;
             MarkBlockedTweaks(result);
             RefreshOosu10State();
 
@@ -1756,8 +1775,9 @@ public sealed class MainViewModel : ObservableObject
                 tweaksToRestore, restore: true,
                 log: msg => _services.Logger.Log(msg),
                 progress: ReportProgress));
-            if (_services.Backup.CurrentBackupDirectory is not null)
-                _services.Journal.SaveTo(_services.Backup.CurrentBackupDirectory, _services.Logger.Log);
+            if (_services.Backup.CurrentBackupDirectory is not null &&
+                !_services.Journal.SaveTo(_services.Backup.CurrentBackupDirectory, _services.Logger.Log))
+                _services.Logger.Bad("journal.json não pôde ser gravado; o desfazer pode estar incompleto.");
 
             if (result.Applied.Count > 0)
             {

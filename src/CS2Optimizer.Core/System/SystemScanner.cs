@@ -221,6 +221,14 @@ public sealed class SystemScanner
         ctx.TelemetryVoice = Int(@"HKCU\Software\Microsoft\Speech_OneCore\Settings\OnlineSpeechPrivacy", "HasAccepted");
         ctx.TelemetryCompatTask = await GetScheduledTaskStateAsync(
             @"\Microsoft\Windows\Application Experience\", "Microsoft Compatibility Appraiser", cancellationToken);
+        ctx.TelemetryDumpLimit = Int(@"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "LimitDumpCollection");
+        ctx.TelemetryTailored = Int(
+            @"HKCU\Software\Microsoft\Windows\CurrentVersion\Privacy", "TailoredExperiencesWithDiagnosticDataEnabled");
+        ctx.TelemetryTipc = Int(@"HKCU\Software\Microsoft\Input\TIPC", "Enabled");
+        ctx.TelemetryWerAdditional = Int(
+            @"HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting", "DontSendAdditionalData");
+        ctx.ProgramDataUpdaterTask = await GetScheduledTaskStateAsync(
+            @"\Microsoft\Windows\Application Experience\", "ProgramDataUpdater", cancellationToken);
 
         // ---------------- Mitigações ----------------
         ctx.Mit = _mitigation.GetState(ctx.Cpu);

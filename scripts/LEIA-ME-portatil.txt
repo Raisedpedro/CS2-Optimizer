@@ -37,6 +37,7 @@ primeira execucao. Clique em "Mais informacoes" -> "Executar assim mesmo".
 
 Seguranca
 ---------
-O programa nunca aplica nada sem confirmacao, cria backup antes de escrever e
-recusa arquivos .reg fora do padrao. Ainda assim: meca FPS antes e depois e
-leia a explicacao de cada item.
+O programa cria backup antes de escrever no registro, recusa arquivos .reg fora
+do padrao e so desfaz pastas de backup conhecidas. O modo --auto nao pergunta:
+leia a explicacao de cada item antes de usar. Alem disso, o executavel nao tem
+assinatura digital, entao confira a origem do download. Meca FPS antes e depois.

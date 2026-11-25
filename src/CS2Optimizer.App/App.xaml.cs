@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Security.Cryptography;
 using System.Windows;
 using System.Windows.Media;
 using CS2Optimizer.Core.Cli;
@@ -53,13 +54,22 @@ public partial class App : Application
 
     /// <summary>
     /// Carrega a fonte embutida (Inter) e a registra como <c>AppFont</c>.
-    /// O WPF não resolve fontes embutidas por pack URI de forma confiável (caía no
-    /// Segoe UI sem avisar), então os arquivos são copiados para
-    /// <c>%LOCALAPPDATA%\CS2-Optimizer\fonts</c> e lidos dali - nada é instalado no
-    /// sistema e o usuário não precisa ter a fonte.
+    /// O WPF não resolve fontes embutidas por pack URI de forma confiável, então
+    /// os arquivos são copiados para <c>%LOCALAPPDATA%\CS2-Optimizer\fonts</c>.
+    /// Como o app roda elevado, a pasta é gravável: os arquivos são SEMPRE
+    /// reescritos a partir do recurso e conferidos por hash antes de serem
+    /// usados — um OTF plantado ali nunca é carregado.
     /// </summary>
     private static FontFamily? TryLoadBundledFont()
     {
+        var esperados = new (string Nome, string Hash)[]
+        {
+            ("Inter-Regular.otf", "D4F2B9E148059A15F014CB0F0B8FEA8CD11BFA447DD483BEDF1B0ADC0E2BA799"),
+            ("Inter-Medium.otf", "6C222ED2C3660524DD0C14FB745E00FEE65C5361AB28F60FBA6730BF4E648763"),
+            ("Inter-SemiBold.otf", "0A4D30778FA2DC239368D90FD854B88B27E7EDE737450DA72686A90ECA66F02C"),
+            ("Inter-Bold.otf", "9FC6261E817D0B1B2BF1953D8799BB1C837D11AEEBBF83AE352E7B4D6DE6425D")
+        };
+
         try
         {
             var pasta = Path.Combine(
@@ -67,18 +77,20 @@ public partial class App : Application
                 "CS2-Optimizer", "fonts");
             Directory.CreateDirectory(pasta);
 
-            var arquivos = new[] { "Inter-Regular.otf", "Inter-Medium.otf", "Inter-SemiBold.otf", "Inter-Bold.otf" };
-            foreach (var nome in arquivos)
+            foreach (var (nome, hash) in esperados)
             {
-                var destino = Path.Combine(pasta, nome);
-                if (File.Exists(destino) && new FileInfo(destino).Length > 0) continue;
-
                 var recurso = Application.GetResourceStream(new Uri($"Assets/Fonts/{nome}", UriKind.Relative));
-                if (recurso is null) continue;
+                if (recurso is null) return null;
+                var destino = Path.Combine(pasta, nome);
 
                 using var origem = recurso.Stream;
-                using var copia = File.Create(destino);
-                origem.CopyTo(copia);
+                using var memory = new MemoryStream();
+                origem.CopyTo(memory);
+                var bytes = memory.ToArray();
+                var atual = Convert.ToHexString(SHA256.HashData(bytes));
+                if (!string.Equals(atual, hash, StringComparison.OrdinalIgnoreCase)) return null;
+
+                File.WriteAllBytes(destino, bytes);
             }
 
             foreach (FontFamily familia in Fonts.GetFontFamilies(pasta + Path.DirectorySeparatorChar))

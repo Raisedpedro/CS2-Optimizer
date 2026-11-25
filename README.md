@@ -82,15 +82,17 @@ aplica alterações.
 
 ## Segurança e reversibilidade
 
-- Antes de qualquer gravação, o programa cria uma pasta de backup em
+- Antes de qualquer escrita de registro, o programa cria uma pasta de backup em
   `Backups\CS2-Optimizer-Backup-<data-hora>` (ao lado do `CS2Optimizer.exe`) com:
   - exportação das chaves de registro usadas (`.reg`);
   - `bcd.bak`;
   - `powerscheme.txt`;
   - `journal.json` com o valor **anterior** de cada item alterado.
 - O desfazer percorre o journal do mais novo para o mais antigo: regrava o valor antigo ou **apaga o que o programa criou**.
-- Um `.reg` só é importado se tiver o cabeçalho correto, nenhuma exclusão de chave (`[-...]`) e apenas chaves que o próprio programa exporta.
-- Ponto de restauração do Windows é sempre perguntado (nunca automático). O Windows limita a um ponto a cada 24 horas.
+- O desfazer só aceita pastas `CS2-Optimizer-Backup-<data-hora>` dentro da pasta do programa, de `Backups\` ou da Área de Trabalho; journal e `.reg` só restauram pares de chave/valor que o próprio programa escreve.
+- Um `.reg` é filtrado antes da importação: cabeçalho correto, nenhuma exclusão de chave/valor (`[-...]` ou `= -`) e somente valores da allowlist.
+- Se o backup falhar, nenhuma correção é aplicada. A limpeza rápida é a exceção: ela só apaga arquivos temporários e não grava registro, então não cria backup.
+- Ponto de restauração é perguntado na aplicação normal; em `--auto` ele é criado automaticamente. O Windows limita a um ponto a cada 24 horas.
 - Itens `Risky` nunca são recomendados, nunca entram em `--auto` e mostram a explicação completa com padrão **Não**.
 
 ## Limpeza rápida

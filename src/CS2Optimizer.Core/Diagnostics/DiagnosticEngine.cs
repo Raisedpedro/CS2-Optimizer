@@ -347,7 +347,7 @@ public sealed class DiagnosticEngine
         else Warn("Serviço de telemetria (DiagTrack) LIGADO (envia dados de uso para a Microsoft).");
 
         if (ctx.TelemetryLevel == 0) Ok("Dados de diagnóstico no mínimo (AllowTelemetry = 0).");
-        else if (ctx.TelemetryLevel is null) Warn("Dados de diagnóstico no padrão do Windows (envia o pacote completo).");
+        else if (ctx.TelemetryLevel is null) Warn("Dados de diagnóstico no padrão do Windows (pacote obrigatório e opcional conforme a configuração).");
         else Warn($"Dados de diagnóstico em nível {ctx.TelemetryLevel} (o mínimo é 0).");
 
         if (ctx.TelemetryAdId == 0) Ok("ID de publicidade desligado.");

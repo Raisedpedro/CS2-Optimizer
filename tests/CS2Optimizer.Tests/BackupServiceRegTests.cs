@@ -24,18 +24,79 @@ public sealed class BackupServiceRegTests
     }
 
     [Fact]
-    public void Accepts_hkcu_exported_key_and_subkey()
+    public void Accepts_only_values_known_to_the_program()
     {
         var file = WriteReg(
             "Windows Registry Editor Version 5.00\r\n\r\n" +
             "[HKEY_CURRENT_USER\\Control Panel\\Mouse]\r\n" +
             "\"MouseSpeed\"=\"0\"\r\n\r\n" +
-            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Dwm\\SubKey]\r\n" +
-            "\"X\"=dword:00000001\r\n");
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Policies\\Microsoft\\Windows\\DataCollection]\r\n" +
+            "\"LimitDumpCollection\"=dword:00000001\r\n");
 
         try
         {
             Assert.True(BackupService.TestRegSafe(file));
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
+    [Fact]
+    public void Drops_unknown_values_and_keeps_only_program_values()
+    {
+        var file = WriteReg(
+            "Windows Registry Editor Version 5.00\r\n\r\n" +
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Dwm]\r\n" +
+            "\"OverlayTestMode\"=dword:00000005\r\n" +
+            "\"X\"=dword:00000001\r\n");
+        var clean = file + ".clean";
+
+        try
+        {
+            Assert.True(RegFileSanitizer.TrySanitize(file, clean, out var kept));
+            Assert.Equal(1, kept);
+            var text = File.ReadAllText(clean, Encoding.Unicode);
+            Assert.Contains("OverlayTestMode", text);
+            Assert.DoesNotContain("\"X\"", text);
+        }
+        finally
+        {
+            File.Delete(file);
+            if (File.Exists(clean)) File.Delete(clean);
+        }
+    }
+
+    [Fact]
+    public void Rejects_dangerous_value_name_in_exported_key()
+    {
+        var file = WriteReg(
+            "Windows Registry Editor Version 5.00\r\n\r\n" +
+            "[HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\DiagTrack]\r\n" +
+            "\"ImagePath\"=\"cmd.exe /c malicioso\"\r\n");
+
+        try
+        {
+            Assert.False(BackupService.TestRegSafe(file));
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
+    [Fact]
+    public void Rejects_value_deletion()
+    {
+        var file = WriteReg(
+            "Windows Registry Editor Version 5.00\r\n\r\n" +
+            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\Dwm]\r\n" +
+            "\"OverlayTestMode\"=-\r\n");
+
+        try
+        {
+            Assert.False(BackupService.TestRegSafe(file));
         }
         finally
         {

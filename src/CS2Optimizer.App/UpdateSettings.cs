@@ -42,8 +42,12 @@ internal sealed class UpdateSettings
 
     private static string FilePath => AppPaths.SettingsFile;
 
+    /// <summary>Avisa que o arquivo estava corrompido e as preferências voltaram ao padrão.</summary>
+    public static bool LastLoadFailed { get; private set; }
+
     public static UpdateSettings Load()
     {
+        LastLoadFailed = false;
         try
         {
             if (!File.Exists(FilePath)) return new UpdateSettings();
@@ -53,6 +57,15 @@ internal sealed class UpdateSettings
         }
         catch
         {
+            LastLoadFailed = true;
+            // Guarda o original para diagnóstico em vez de sobrescrever o arquivo.
+            try
+            {
+                var bad = FilePath + ".bad";
+                if (File.Exists(bad)) File.Delete(bad);
+                File.Move(FilePath, bad);
+            }
+            catch { }
             return new UpdateSettings();
         }
     }
