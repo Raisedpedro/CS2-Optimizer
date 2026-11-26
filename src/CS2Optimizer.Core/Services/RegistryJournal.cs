@@ -75,7 +75,9 @@ public sealed class RegistryJournal
     /// <summary>Acrescenta as entradas pendentes ao journal.json da pasta de backup.</summary>
     public bool SaveTo(string backupDirectory, Action<string, LogLevel>? log = null)
     {
-        if (_entries.Count == 0) return false;
+        // Nada pendente já é sucesso: alguns fluxos chamam SaveTo depois que o
+        // motor já gravou o journal. Isso não é falha e não deve virar aviso.
+        if (_entries.Count == 0) return true;
 
         try
         {

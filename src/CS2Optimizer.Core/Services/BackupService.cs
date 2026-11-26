@@ -96,7 +96,7 @@ public sealed class BackupService
 
         await ProtectBackupRootAsync(cancellationToken);
         Directory.CreateDirectory(dir);
-        var failures = 0;
+        var warnings = 0;
 
         try
         {
@@ -107,14 +107,14 @@ public sealed class BackupService
                 _log.Ok("BCD exportado.");
             else
             {
-                _log.Warn("Não consegui exportar o BCD.");
-                failures++;
+                _log.Warn("Não consegui exportar o BCD (seguindo com o backup das chaves).");
+                warnings++;
             }
         }
         catch
         {
-            _log.Warn("Não consegui exportar o BCD.");
-            failures++;
+            _log.Warn("Não consegui exportar o BCD (seguindo com o backup das chaves).");
+            warnings++;
         }
 
         foreach (var export in RegistryExports.Map)
@@ -127,14 +127,16 @@ public sealed class BackupService
                     "Exportando registro", cancellationToken: cancellationToken);
                 if (!result.Started || result.ExitCode != 0)
                 {
-                    _log.Warn($"Não consegui exportar {export.Value}.");
-                    failures++;
+                    // Chave ausente ou protegida é comum e não invalida o backup:
+                    // o journal registra exatamente o que o programa alterou.
+                    _log.Warn($"Não consegui exportar {export.Value} (chave ausente/protegida); seguindo.");
+                    warnings++;
                 }
             }
             catch (Exception ex)
             {
-                _log.Warn($"Não consegui exportar {export.Value}: {ex.Message}");
-                failures++;
+                _log.Warn($"Não consegui exportar {export.Value}: {ex.Message} (seguindo).");
+                warnings++;
             }
         }
         _log.Ok("Chaves de registro exportadas.");
@@ -151,8 +153,8 @@ public sealed class BackupService
         }
         catch (Exception ex)
         {
-            _log.Warn("Não consegui salvar o plano de energia: " + ex.Message);
-            failures++;
+            _log.Warn("Não consegui salvar o plano de energia: " + ex.Message + " (seguindo).");
+            warnings++;
         }
 
         if (createRestorePoint)
@@ -183,15 +185,13 @@ public sealed class BackupService
             _log.Warn("Ponto de restauração: não criado (você escolheu não criar).");
         }
 
-        // Backup incompleto não pode virar "sucesso": é melhor não aplicar nada
-        // do que aplicar sem poder desfazer.
-        if (failures > 0)
-        {
-            BackupMade = false;
-            throw new InvalidOperationException(
-                $"O backup falhou em {failures} etapa(s). Nenhuma alteração foi aplicada. " +
-                "Verifique o log e tente novamente.");
-        }
+        // Uma chave opcional ausente/protegida não pode bloquear todas as
+        // correções. O journal guarda o valor anterior de tudo que é alterado,
+        // então o desfazer continua funcionando mesmo com algum aviso aqui.
+        if (warnings > 0)
+            _log.Warn($"Backup concluído com {warnings} aviso(s); veja as mensagens acima.");
+        else
+            _log.Ok("Backup concluído.");
 
         BackupMade = true;
         return true;

@@ -46,6 +46,23 @@ public sealed class RegistryJournalTests
     }
 
     [Fact]
+    public void SaveTo_with_no_entries_is_success()
+    {
+        var dir = NewTempDirectory();
+        try
+        {
+            var journal = new RegistryJournal();
+
+            Assert.True(journal.SaveTo(dir));
+            Assert.False(File.Exists(Path.Combine(dir, "journal.json")));
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
     public void RestoreFrom_applies_newest_entry_first_and_deletes_created_values()
     {
         var dir = NewTempDirectory();
