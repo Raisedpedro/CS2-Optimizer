@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.Win32;
 using CS2Optimizer.Core.Models;
 using CS2Optimizer.Core.Services;
@@ -5,9 +6,10 @@ using CS2Optimizer.Core.Services;
 namespace CS2Optimizer.Core.Mitigations;
 
 /// <summary>
-/// Mitigações de CPU (Spectre/Meltdown/MDS...), baseadas no KB4073119.
-/// Só mexe em FeatureSettingsOverride, FeatureSettingsOverrideMask e
-/// MinVmVersionForCpuBasedMitigations. Voltar ao padrão = APAGAR os valores.
+/// Mitigações de CPU (Spectre/Meltdown/MDS...), baseadas no KB4073119, e o
+/// desligamento opcional do VBS/HVCI. As sobrescritas de CPU voltam ao padrão
+/// APAGANDO os valores; o VBS é desligado gravando 0 nas chaves documentadas
+/// e ajustando o BCD. Tudo passa pelo journal antes de ser alterado.
 /// </summary>
 public sealed class MitigationService
 {
@@ -20,11 +22,24 @@ public sealed class MitigationService
     public const string MaskValue = "FeatureSettingsOverrideMask";
     public const string MinVmValue = "MinVmVersionForCpuBasedMitigations";
 
-    private readonly RegistryService _registry;
+    public const string DeviceGuardKey = @"HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard";
+    public const string HvciKey = DeviceGuardKey + @"\Scenarios\HypervisorEnforcedCodeIntegrity";
+    public const string KernelShadowStacksKey = DeviceGuardKey + @"\Scenarios\KernelShadowStacks";
+    public const string CredentialGuardKey = DeviceGuardKey + @"\Scenarios\CredentialGuard";
+    public const string LsaKey = @"HKLM\SYSTEM\CurrentControlSet\Control\Lsa";
 
-    public MitigationService(RegistryService registry)
+    public const string EnableVbsValue = "EnableVirtualizationBasedSecurity";
+    public const string RequirePlatformSecurityFeaturesValue = "RequirePlatformSecurityFeatures";
+    public const string EnabledValue = "Enabled";
+    public const string LsaCfgFlagsValue = "LsaCfgFlags";
+
+    private readonly RegistryService _registry;
+    private readonly ExternalProcessRunner _runner;
+
+    public MitigationService(RegistryService registry, ExternalProcessRunner runner)
     {
         _registry = registry;
+        _runner = runner;
     }
 
     public static IReadOnlyList<MitigationProfile> Profiles { get; } = new List<MitigationProfile>
@@ -36,9 +51,9 @@ public sealed class MitigationService
             0, true, new[] { "Intel", "AMD", "ARM" }, false, MitigationSecurity.Padrao),
 
         new("desligar-v2",
-            "Desligar só a proteção Spectre v2 (CVE-2017-5715)",
-            "Desliga o isolamento da previsão de desvios (Spectre v2). Pode render um pouco em CPU antiga; deixa o PC mais exposto.",
-            "Desliga a proteção contra Spectre v2, que impede um programa de influenciar a previsão de desvios da CPU para espiar memória de outros. Pode devolver desempenho em CPUs mais antigas (onde a proteção é por software/microcódigo); em CPUs recentes o ganho tende a ser pequeno. Um código malicioso rodando no PC poderia, em teoria, ler dados de outros processos.",
+            "BTI / Spectre v2: desligar só a proteção de desvios (CVE-2017-5715)",
+            "Opcional: desliga BTI/Spectre v2 (FeatureSettingsOverride = 1). Pode ajudar em CPU antiga; não mexe no Meltdown.",
+            "BTI (Branch Target Injection) é o nome técnico da CVE-2017-5715, conhecida como Spectre v2. O KB4072698 da Microsoft documenta que FeatureSettingsOverride = 1 com Mask = 3 desliga somente essa proteção: a CPU deixa de ser isolada contra um programa que tenta influenciar a previsão de desvios para espiar memória de outros processos. Em processador antigo, onde a correção é feita por microcódigo/software, pode devolver algum desempenho; em CPU recente o ganho costuma ser pequeno. Meltdown, MDS/TAA e as demais proteções continuam como o Windows decidir. É opcional: meça o FPS antes e depois. O efeito aparece após reiniciar.",
             1, false, new[] { "Intel", "AMD" }, false, MitigationSecurity.Reduzida),
 
         new("desligar-tudo",
@@ -104,7 +119,7 @@ public sealed class MitigationService
 
     public static IReadOnlyList<(uint Hex, string Name)> Bits { get; } = new List<(uint, string)>
     {
-        (0x00000001, "Spectre v2 DESLIGADO (CVE-2017-5715)"),
+        (0x00000001, "BTI / Spectre v2 DESLIGADO (CVE-2017-5715)"),
         (0x00000002, "Meltdown DESLIGADO (CVE-2017-5754)"),
         (0x00000008, "SSBD ligado (CVE-2018-3639)"),
         (0x00000040, "Spectre v2 usuário->kernel (AMD/ARM); em Intel, junto com o bit 8 = bloco MDS/TAA/L1TF do KB"),
@@ -201,6 +216,112 @@ public sealed class MitigationService
         var minVmSnapshot = _registry.GetValue(VirtualizationKey, MinVmValue);
 
         return DecodeState(cpu, overrideSnapshot, maskSnapshot, minVmSnapshot);
+    }
+
+    /// <summary>Lê BCD + chaves do VBS. O parâmetro running vem do WMI (estado atual).</summary>
+    public async Task<VbsState> GetVbsStateAsync(bool running, CancellationToken cancellationToken = default)
+    {
+        var bcd = await _runner.RunAsync("bcdedit.exe",
+            new[] { "/enum", "{current}" }, "Lendo BCD", cancellationToken: cancellationToken);
+        var output = (bcd.StandardOutput ?? "") + Environment.NewLine + (bcd.StandardError ?? "");
+        var match = Regex.Match(output, @"(?im)^\s*hypervisorlaunchtype\s+(\S+)");
+        var launch = match.Success ? match.Groups[1].Value.Trim() : "";
+
+        return DecodeVbsState(
+            launch,
+            _registry.GetValue(DeviceGuardKey, EnableVbsValue),
+            _registry.GetValue(DeviceGuardKey, RequirePlatformSecurityFeaturesValue),
+            _registry.GetValue(HvciKey, EnabledValue),
+            _registry.GetValue(KernelShadowStacksKey, EnabledValue),
+            _registry.GetValue(CredentialGuardKey, EnabledValue),
+            _registry.GetValue(LsaKey, LsaCfgFlagsValue),
+            running);
+    }
+
+    /// <summary>Decodifica o VBS a partir de snapshots, sem tocar no sistema (testável).</summary>
+    public static VbsState DecodeVbsState(
+        string hypervisorLaunchType,
+        RegistryValueSnapshot enableVbs,
+        RegistryValueSnapshot requirePlatformSecurity,
+        RegistryValueSnapshot hvci,
+        RegistryValueSnapshot kernelShadowStacks,
+        RegistryValueSnapshot credentialGuard,
+        RegistryValueSnapshot lsaCfgFlags,
+        bool running) => new(
+            hypervisorLaunchType?.Trim() ?? "",
+            ToInt32(enableVbs),
+            ToInt32(requirePlatformSecurity),
+            ToInt32(hvci),
+            ToInt32(kernelShadowStacks),
+            ToInt32(credentialGuard),
+            ToInt32(lsaCfgFlags),
+            running);
+
+    /// <summary>
+    /// Desliga VBS/HVCI. Escreve primeiro as chaves (o journal guarda o valor
+    /// anterior) e depois ajusta o BCD. Se o bcdedit falhar, a exceção avisa a
+    /// interface; o chamador deve salvar o journal mesmo assim para o desfazer
+    /// continuar disponível.
+    /// </summary>
+    public async Task ApplyVbsOffAsync(CancellationToken cancellationToken = default)
+    {
+        _registry.SetValue(DeviceGuardKey, EnableVbsValue, 0, RegistryValueKind.DWord);
+        _registry.SetValue(DeviceGuardKey, RequirePlatformSecurityFeaturesValue, 0, RegistryValueKind.DWord);
+        _registry.SetValue(HvciKey, EnabledValue, 0, RegistryValueKind.DWord);
+        _registry.SetValue(KernelShadowStacksKey, EnabledValue, 0, RegistryValueKind.DWord);
+        _registry.SetValue(CredentialGuardKey, EnabledValue, 0, RegistryValueKind.DWord);
+        _registry.SetValue(LsaKey, LsaCfgFlagsValue, 0, RegistryValueKind.DWord);
+
+        var bcd = await _runner.RunAsync("bcdedit.exe",
+            new[] { "/set", "hypervisorlaunchtype", "off" },
+            "Desligando VBS no BCD", cancellationToken: cancellationToken);
+        if (!bcd.Started || bcd.ExitCode != 0)
+        {
+            var detail = string.IsNullOrWhiteSpace(bcd.StandardError)
+                ? bcd.StandardOutput : bcd.StandardError;
+            throw new InvalidOperationException(
+                "Não consegui ajustar o BCD (hypervisorlaunchtype = off)." +
+                (string.IsNullOrWhiteSpace(detail) ? "" : Environment.NewLine + detail.Trim()));
+        }
+    }
+
+    /// <summary>Texto curto do painel de VBS na aba de mitigações.</summary>
+    public string GetVbsStateText(VbsState state)
+    {
+        static string Fmt(int? value) => value is null ? "(ausente/não lido)" : value.Value.ToString();
+
+        var lines = new List<string>
+        {
+            "Em execução agora ....... " + (state.Running ? "SIM" : "NÃO"),
+            "BCD hypervisorlaunchtype . " + (string.IsNullOrWhiteSpace(state.HypervisorLaunchType)
+                ? "(não lido)" : state.HypervisorLaunchType),
+            "EnableVirtualizationBasedSecurity . " + Fmt(state.EnableVirtualizationBasedSecurity),
+            "RequirePlatformSecurityFeatures ... " + Fmt(state.RequirePlatformSecurityFeatures),
+            "Integridade de memória (HVCI) ..... " + Fmt(state.HvciEnabled),
+            "Kernel shadow stacks .............. " + Fmt(state.KernelShadowStacksEnabled),
+            "Credential Guard .................. " + Fmt(state.CredentialGuardEnabled),
+            "LsaCfgFlags ....................... " + Fmt(state.LsaCfgFlags),
+            ""
+        };
+
+        if (state.NeedsReboot)
+            lines.Add("Configuração já desligada, mas o VBS ainda aparece em execução: reinicie o PC para valer.");
+        else if (state.ConfiguredOff)
+            lines.Add("VBS/HVCI desligado na configuração e não aparece em execução. Nada a fazer.");
+        else
+            lines.Add("VBS/HVCI está ligado ou configurado para ligar. Desligar pode devolver desempenho em alguns PCs; veja os avisos antes de aplicar.");
+
+        lines.Add("");
+        lines.Add("Depois de reiniciar, confira no msinfo32: \"Segurança baseada em virtualização\" deve mostrar \"Não habilitada\".");
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    private static int? ToInt32(RegistryValueSnapshot snapshot)
+    {
+        if (!snapshot.Exists || snapshot.Value is null) return null;
+        var value = ToInt64(snapshot.Value);
+        if (value is null || value < int.MinValue || value > int.MaxValue) return null;
+        return (int)value.Value;
     }
 
     /// <summary>Decodifica o estado a partir de snapshots, sem tocar no registro (testável).</summary>
@@ -311,6 +432,7 @@ public sealed class MitigationService
         lines.Add("  - O que você muda aqui só passa a valer DEPOIS de reiniciar (o programa nunca reinicia sozinho).");
         lines.Add("  - Para ver o que está REALMENTE em vigor no kernel, no PowerShell (administrador): Install-Module SpeculationControl ; Get-SpeculationControlSettings (módulo oficial da Microsoft, KB4074629).");
         lines.Add("  - Todo valor gravado aqui é salvo antes no backup: o botão Desfazer devolve o estado anterior.");
+        lines.Add("  - O VBS/HVCI aparece no cartão acima; o Desfazer também devolve o BCD e as chaves dele.");
         return string.Join(Environment.NewLine, lines);
     }
 

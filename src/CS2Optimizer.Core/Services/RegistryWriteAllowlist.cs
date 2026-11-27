@@ -93,6 +93,14 @@ public static class RegistryWriteAllowlist
         Add(set, MitigationService.MemoryManagementKey, MitigationService.MaskValue);
         Add(set, MitigationService.VirtualizationKey, MitigationService.MinVmValue);
 
+        // VBS / HVCI: valores que o desligamento grava e o desfazer restaura.
+        Add(set, MitigationService.DeviceGuardKey, MitigationService.EnableVbsValue);
+        Add(set, MitigationService.DeviceGuardKey, MitigationService.RequirePlatformSecurityFeaturesValue);
+        Add(set, MitigationService.HvciKey, MitigationService.EnabledValue);
+        Add(set, MitigationService.KernelShadowStacksKey, MitigationService.EnabledValue);
+        Add(set, MitigationService.CredentialGuardKey, MitigationService.EnabledValue);
+        Add(set, MitigationService.LsaKey, MitigationService.LsaCfgFlagsValue);
+
         return set;
     }
 

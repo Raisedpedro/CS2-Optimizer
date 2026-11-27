@@ -79,6 +79,7 @@ public sealed class FixContext
 
     public bool HvciActive { get; set; }
     public bool HvciRead { get; set; }
+    public VbsState Vbs { get; set; } = VbsState.Unknown;
     public IReadOnlyList<string> NvidiaInfoLines { get; set; } = Array.Empty<string>();
     public IReadOnlyList<string> RunningOverlayProcesses { get; set; } = Array.Empty<string>();
     public IReadOnlyList<string> StartupCommands { get; set; } = Array.Empty<string>();

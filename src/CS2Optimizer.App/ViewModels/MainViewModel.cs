@@ -50,6 +50,8 @@ public sealed class MainViewModel : ObservableObject
     private string _mitigationSummary = "—";
     private Brush _mitigationSummaryBrush = UiBrushes.Muted;
     private string _mitigationStateText = "Faça uma leitura da máquina para ver o estado das mitigações.";
+    private string _vbsStateText = "Faça uma leitura da máquina para ver o estado do VBS/HVCI.";
+    private bool _vbsCanApply;
     private bool _needReboot;
     private string _recommendedSummary = "Aguardando leitura da máquina.";
     private FixItemViewModel? _selectedFix;
@@ -102,6 +104,8 @@ public sealed class MainViewModel : ObservableObject
         ClearSelectionCommand = new RelayCommand(ClearSelection, () => !IsBusy && SelectedCount > 0);
         ApplyMitigationsCommand = new AsyncRelayCommand(ApplyMitigationsAsync, () => !IsBusy && SelectedMitigationCount > 0);
         ResetMitigationsCommand = new AsyncRelayCommand(ResetMitigationsAsync, () => !IsBusy);
+        ApplyVbsOffCommand = new AsyncRelayCommand(ApplyVbsOffAsync, () => !IsBusy && VbsCanApply);
+        ShowVbsVerificationCommand = new RelayCommand(ShowVbsVerification);
         ShowWindowsDefaultCommand = new RelayCommand(ShowWindowsDefault);
         ClearMitigationSelectionCommand = new RelayCommand(ClearMitigationSelection, () => !IsBusy && SelectedMitigationCount > 0);
         RefreshBackupsCommand = new RelayCommand(RefreshBackups);
@@ -168,6 +172,8 @@ public sealed class MainViewModel : ObservableObject
     public RelayCommand ClearSelectionCommand { get; }
     public AsyncRelayCommand ApplyMitigationsCommand { get; }
     public AsyncRelayCommand ResetMitigationsCommand { get; }
+    public AsyncRelayCommand ApplyVbsOffCommand { get; }
+    public RelayCommand ShowVbsVerificationCommand { get; }
     public RelayCommand ShowWindowsDefaultCommand { get; }
     public RelayCommand ClearMitigationSelectionCommand { get; }
     public RelayCommand RefreshBackupsCommand { get; }
@@ -377,6 +383,15 @@ public sealed class MainViewModel : ObservableObject
     public string MitigationSummary { get => _mitigationSummary; private set => SetProperty(ref _mitigationSummary, value); }
     public Brush MitigationSummaryBrush { get => _mitigationSummaryBrush; private set => SetProperty(ref _mitigationSummaryBrush, value); }
     public string MitigationStateText { get => _mitigationStateText; private set => SetProperty(ref _mitigationStateText, value); }
+    public string VbsStateText { get => _vbsStateText; private set => SetProperty(ref _vbsStateText, value); }
+    public bool VbsCanApply
+    {
+        get => _vbsCanApply;
+        private set
+        {
+            if (SetProperty(ref _vbsCanApply, value)) ApplyVbsOffCommand.RaiseCanExecuteChanged();
+        }
+    }
     public string RecommendedSummary { get => _recommendedSummary; private set => SetProperty(ref _recommendedSummary, value); }
 
     public bool NeedReboot
@@ -837,11 +852,18 @@ public sealed class MainViewModel : ObservableObject
             ? "Plano de alto desempenho ativo"
             : "Plano padrão/economia de energia";
 
-        HvciText = !ctx.HvciRead
-            ? "Estado não lido"
-            : ctx.HvciActive
-                ? "Integridade de memória ATIVA (custa alguns % de FPS)"
-                : "Integridade de memória desligada";
+        HvciText = ctx.Vbs.NeedsReboot
+            ? "VBS desligado na configuração; reinicie para valer"
+            : ctx.Vbs.ConfiguredOff
+                ? "VBS/HVCI desligado"
+                : !ctx.HvciRead
+                    ? "Estado não lido"
+                    : ctx.HvciActive
+                        ? "Integridade de memória ATIVA (pode custar alguns % de FPS)"
+                        : "Integridade de memória não aparece em execução";
+
+        VbsStateText = _services.Mitigation.GetVbsStateText(ctx.Vbs);
+        VbsCanApply = ctx.Vbs.IsEnabled;
     }
 
     private void UpdateDiagnostics(DiagnosticResult result)
@@ -977,7 +999,7 @@ public sealed class MainViewModel : ObservableObject
         question.AppendLine($"• Ajustes do O&O recomendados para CS2 (ainda inativos): {tweaks.Count}");
         question.AppendLine();
         question.AppendLine("Itens de risco e os marcados como \"evitar\" ficam de fora. " +
-                            "Da lista de opcionais entra apenas a aceleração do mouse, marcada como recomendada para CS2.");
+                            "Da lista de opcionais entram a aceleração do mouse e o desligamento do VBS/HVCI, marcados como recomendados para CS2.");
         question.AppendLine("Cada escrita passa pelo backup e pode ser desfeita em Backups / Desfazer.");
         question.AppendLine("Se algo exigir reinício, o aviso aparece no fim.");
 
@@ -1396,6 +1418,93 @@ public sealed class MainViewModel : ObservableObject
             EndOperation();
         }
     }
+
+    private async Task ApplyVbsOffAsync()
+    {
+        if (IsBusy) return;
+
+        var question = new StringBuilder();
+        question.AppendLine("Desligar VBS / Integridade de memória (HVCI)?");
+        question.AppendLine();
+        question.AppendLine("O Windows deixa de usar o hipervisor para isolar o kernel. Em alguns PCs isso devolve alguns % de FPS; em outros não muda nada. O efeito só aparece depois de reiniciar.");
+        question.AppendLine();
+        question.AppendLine("Antes: Valorant (Vanguard) e FACEIT podem exigir VBS ligado. WSL2, Docker, Hyper-V e emuladores Android podem parar de funcionar. Em PC de trabalho com dados sensíveis, mantenha ligado.");
+        question.AppendLine();
+        question.AppendLine("O backup guarda o BCD e as chaves alteradas. Use Backups / Desfazer para voltar.");
+
+        if (!_interaction.Confirm(question.ToString(), FixLevel.Optional)) return;
+
+        IsBusy = true;
+        BeginOperation("Desligando VBS", "BCD, DeviceGuard, HVCI e Credential Guard.");
+        try
+        {
+            if (!await EnsureBackupAsync())
+            {
+                Status = "Cancelado.";
+                StatusDetail = "Nenhuma alteração foi feita no VBS.";
+                return;
+            }
+
+            var dir = _services.Backup.CurrentBackupDirectory;
+            if (string.IsNullOrWhiteSpace(dir) || !File.Exists(Path.Combine(dir, "bcd.bak")))
+                throw new InvalidOperationException(
+                    "O backup do BCD não foi criado. Sem ele o Desfazer não devolve o hypervisorlaunchtype; nada foi alterado.");
+
+            // Mesmo que o bcdedit falhe no meio, o que já foi escrito no registro
+            // entra no journal para o Desfazer continuar funcionando.
+            try
+            {
+                await _services.Mitigation.ApplyVbsOffAsync();
+            }
+            finally
+            {
+                if (dir is not null &&
+                    !_services.Journal.SaveTo(dir, _services.Logger.Log))
+                    _services.Logger.Bad("journal.json não pôde ser gravado; o desfazer pode estar incompleto.");
+            }
+
+            NeedReboot = true;
+            RecordSessionChange("VBS", "Desligou VBS/HVCI",
+                "Reinicie e confira no msinfo32. Desfazer devolve o estado anterior.", UiBrushes.Caution);
+            _services.Logger.Ok("VBS/HVCI desligado na configuração.");
+            Status = "VBS desligado na configuração.";
+            StatusDetail = "Reinicie o PC para valer.";
+            _interaction.ShowMessage("VBS / HVCI",
+                "Configuração alterada. Reinicie o PC.\n\n" +
+                "Depois, abra msinfo32 e confirme se \"Segurança baseada em virtualização\" mostra \"Não habilitada\". " +
+                "Use o botão \"Como verificar\" na aba Mitigações para o passo a passo completo.");
+
+            BusyTitle = "Reler a máquina";
+            BusyDetail = "Atualizando o estado do VBS.";
+            IsProgressIndeterminate = true;
+            await ScanCoreAsync();
+            NeedReboot = true;
+            Status = "VBS desligado na configuração.";
+            StatusDetail = "Reinicie o PC para valer.";
+        }
+        catch (Exception ex)
+        {
+            Status = "Falha ao desligar VBS.";
+            StatusDetail = ex.Message;
+            _services.Logger.Bad("Falha ao desligar VBS: " + ex.Message);
+            _interaction.ShowMessage("VBS / HVCI", ex.ToString(), true);
+        }
+        finally
+        {
+            IsBusy = false;
+            EndOperation();
+        }
+    }
+
+    private void ShowVbsVerification() =>
+        _interaction.ShowMessage("Como verificar o VBS",
+            "1. Reinicie o PC (a alteração só vale depois disso).\n" +
+            "2. Pressione Win + R, digite msinfo32 e confirme.\n" +
+            "3. Procure \"Segurança baseada em virtualização\". Deve mostrar \"Não habilitada\".\n\n" +
+            "Se aparecer \"Em execução\": abra Segurança do Windows > Segurança do dispositivo > Isolamento de núcleo, " +
+            "desligue \"Integridade de memória\" e reinicie novamente.\n\n" +
+            "Se Valorant, FACEIT, WSL2, Docker, Hyper-V ou um emulador Android parar de funcionar, " +
+            "volte com Backups / Desfazer e reinicie.");
 
     private void RefreshMitigationState()
     {
@@ -2229,6 +2338,7 @@ public sealed class MainViewModel : ObservableObject
         ClearSelectionCommand.RaiseCanExecuteChanged();
         ApplyMitigationsCommand.RaiseCanExecuteChanged();
         ResetMitigationsCommand.RaiseCanExecuteChanged();
+        ApplyVbsOffCommand.RaiseCanExecuteChanged();
         ClearMitigationSelectionCommand.RaiseCanExecuteChanged();
         RestoreSelectedBackupCommand.RaiseCanExecuteChanged();
         RestoreFromFolderCommand.RaiseCanExecuteChanged();

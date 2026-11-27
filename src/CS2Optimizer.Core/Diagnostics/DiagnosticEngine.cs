@@ -383,20 +383,26 @@ public sealed class DiagnosticEngine
 
     private void RunSecurity(FixContext ctx)
     {
-        Section("Segurança (VBS / HVCI) - só informativo");
-        if (!ctx.HvciRead)
-        {
-            Info("Não foi possível ler o estado do VBS/HVCI.");
-        }
+        Section("Segurança (VBS / HVCI) - informativo");
+        var vbs = ctx.Vbs;
+
+        if (string.IsNullOrWhiteSpace(vbs.HypervisorLaunchType) && !ctx.HvciRead)
+            Info("Não foi possível ler o estado do BCD nem do VBS/HVCI.");
+        else if (vbs.NeedsReboot)
+            Info("Configuração para desligar o VBS já gravada, mas o Windows ainda mostra VBS em execução. Reinicie o PC para valer.");
+        else if (vbs.ConfiguredOff)
+            Ok("VBS/HVCI desligado na configuração e não aparece em execução.");
         else if (ctx.HvciActive)
         {
-            Info("Integridade de memória (HVCI/VBS) ATIVA: custa alguns % de FPS. Desligar mexe na Segurança do Windows (Isolamento de núcleo) e reduz proteção - decisão sua, o programa não altera.");
-            Todo("Segurança do Windows > Segurança do dispositivo > Isolamento de núcleo > Integridade de memória: desligar devolve alguns % de FPS, mas tira uma camada de proteção do kernel. Decida.");
+            Info("VBS/HVCI ATIVO: em alguns PCs custa alguns % de FPS. A aba Mitigações tem o desligamento, com backup e Desfazer.");
+            Todo("Valorant/FACEIT, WSL2, Docker, Hyper-V e emuladores Android podem precisar do VBS. Em PC de trabalho, mantenha ligado.");
         }
         else
         {
-            Ok("Integridade de memória (HVCI) desligada.");
+            Info("Integridade de memória não aparece em execução, mas a configuração ainda permite VBS. Veja a aba Mitigações.");
         }
+
+        Info("Conferência após reiniciar: msinfo32 > \"Segurança baseada em virtualização\" = \"Não habilitada\".");
     }
 
     private void RunProcesses(FixContext ctx)

@@ -164,5 +164,54 @@ public sealed class MitigationTests
         Assert.Equal(expected, MitigationService.DetectVendor(cpu));
     }
 
+    [Fact]
+    public void Bti_profile_uses_the_documentated_override_one_and_mask_three()
+    {
+        var profile = MitigationService.FindProfile("desligar-v2");
+
+        Assert.NotNull(profile);
+        Assert.Equal(1u, profile.Value);
+        Assert.Contains("BTI", profile.Name);
+        Assert.Contains("Mask = 3", MitigationService.Resolve(new[] { "desligar-v2" }).Explanation);
+    }
+
+    [Fact]
+    public void DecodeVbsState_detects_fully_disabled_configuration()
+    {
+        var state = MitigationService.DecodeVbsState(
+            "off", Zero(), Zero(), Zero(), Zero(), Zero(), Zero(), running: true);
+
+        Assert.True(state.ConfiguredOff);
+        Assert.False(state.IsEnabled);
+        Assert.True(state.NeedsReboot);
+    }
+
+    [Fact]
+    public void DecodeVbsState_detects_enabled_configuration_without_bcd_read()
+    {
+        var state = MitigationService.DecodeVbsState(
+            "", One(), Missing(), One(), Missing(), Missing(), One(), running: true);
+
+        Assert.False(state.ConfiguredOff);
+        Assert.True(state.IsEnabled);
+        Assert.False(state.NeedsReboot);
+        Assert.Equal("", state.HypervisorLaunchType);
+    }
+
+    [Fact]
+    public void Vbs_state_text_explains_msinfo32_check()
+    {
+        var state = MitigationService.DecodeVbsState(
+            "off", Zero(), Zero(), Zero(), Zero(), Zero(), Zero(), running: false);
+
+        var text = new MitigationService(new RegistryService(new RegistryJournal()),
+            new ExternalProcessRunner()).GetVbsStateText(state);
+
+        Assert.Contains("msinfo32", text);
+        Assert.Contains("Não habilitada", text);
+    }
+
+    private static RegistryValueSnapshot Zero() => new(true, RegistryValueKind.DWord, 0);
+    private static RegistryValueSnapshot One() => new(true, RegistryValueKind.DWord, 1);
     private static RegistryValueSnapshot Missing() => new(false, null, null);
 }

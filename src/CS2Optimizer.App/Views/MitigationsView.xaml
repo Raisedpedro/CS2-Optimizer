@@ -4,6 +4,7 @@
     <Grid Margin="28">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -15,7 +16,7 @@
             <StackPanel Grid.Row="0">
                 <TextBlock Text="Mitigações de CPU" Style="{StaticResource TitleText}" />
                 <TextBlock Style="{StaticResource SubtitleText}" Margin="0,4,0,0"
-                           Text="Spectre/Meltdown/MDS e outras mitigações (KB4073119). Voltar ao padrão APAGA as chaves de sobrescrita; o efeito só vale após reiniciar." />
+                           Text="Spectre/Meltdown/MDS e outras mitigações (KB4073119), BTI/Spectre v2 e VBS/HVCI. Voltar ao padrão APAGA só as sobrescritas de CPU; qualquer alteração vale após reiniciar." />
             </StackPanel>
             <WrapPanel Grid.Row="1" HorizontalAlignment="Right" Margin="0,8,0,0">
                 <Button Content="Limpar seleção" Style="{StaticResource SecondaryButton}"
@@ -29,8 +30,45 @@
             </WrapPanel>
         </Grid>
 
+        <!-- VBS / HVCI: recomendado para jogos, opcional por mexer em segurança -->
+        <Border Grid.Row="1" Style="{StaticResource CardBorder}" Padding="16" Margin="0,0,0,12">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Row="0" Grid.Column="0">
+                    <TextBlock Text="VBS / Integridade de memória (HVCI)" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Style="{StaticResource MutedText}" Margin="0,4,0,0" FontSize="12"
+                               TextWrapping="Wrap"
+                               Text="Recomendado para jogos: em alguns PCs devolve alguns % de FPS. Em CPU antiga a diferença pode ser maior; em outras máquinas não muda." />
+                </StackPanel>
+
+                <WrapPanel Grid.Row="0" Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Top">
+                    <Button Content="Como verificar" Style="{StaticResource SecondaryButton}"
+                            Command="{Binding ShowVbsVerificationCommand}" Margin="0,0,8,0" />
+                    <Button Content="Desligar VBS (recomendado)" Style="{StaticResource PrimaryButton}"
+                            Command="{Binding ApplyVbsOffCommand}" IsEnabled="{Binding VbsCanApply}" />
+                </WrapPanel>
+
+                <TextBlock Grid.Row="1" Grid.ColumnSpan="2" Text="{Binding VbsStateText}"
+                           Style="{StaticResource MonoText}" FontSize="12" TextWrapping="Wrap"
+                           Margin="0,12,0,0" />
+
+                <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Style="{StaticResource MutedText}"
+                           FontSize="12" TextWrapping="Wrap" Margin="0,10,0,0"
+                           Text="Atenção: Valorant (Vanguard) e FACEIT podem exigir VBS ligado; WSL2, Docker, Hyper-V e emuladores Android podem parar. Em PC de trabalho com dados sensíveis, mantenha ligado. Grandes atualizações do Windows podem religar o VBS. Use Backups / Desfazer para voltar." />
+            </Grid>
+        </Border>
+
         <!-- coluna esquerda: só a lista; coluna direita: estado do registro + detalhe do perfil -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="1.1*" />
                 <ColumnDefinition Width="1*" />

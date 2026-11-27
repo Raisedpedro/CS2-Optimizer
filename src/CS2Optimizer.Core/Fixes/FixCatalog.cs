@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
 using CS2Optimizer.Core.Mitigations;
@@ -30,10 +31,10 @@ public static class FixCategories
 public static class FixCatalog
 {
     // Só entra aqui item Opcional que representa ESTADO pendente (ex.: aceleração
-    // do mouse ligada). Tarefas de limpeza (trim/shaders/temp/syscache) ficam de
-    // fora: elas sempre podem rodar, então nunca "zeram" depois de aplicadas.
+    // do mouse ligada ou VBS/HVCI ativo). Tarefas de limpeza (trim/shaders/temp/
+    // syscache) ficam de fora: elas sempre podem rodar, então nunca "zeram".
     private static readonly string[] RecommendedOptionalIds = {
-        "mouse"
+        "mouse", "vbs-off"
     };
 
     // Privacidade nunca entra no botão único "Aplicar recomendadas": o usuário
@@ -563,6 +564,31 @@ public static class FixCatalog
         }
 
         // ---------------- Mitigações de CPU ----------------
+        if (ctx.Vbs.IsEnabled)
+        {
+            var state = ctx.HvciActive ? "VBS/HVCI ativo" : "VBS/HVCI configurado para ligar";
+
+            fixes.Add(Make("vbs-off",
+                "Desligar VBS / Integridade de memória (HVCI)",
+                state,
+                "Desligar a Segurança baseada em virtualização e a Integridade de memória (HVCI)?\r\n" +
+                "O Windows deixa de usar o hipervisor para isolar o kernel. Em alguns PCs devolve alguns % de FPS; em outros não muda nada.",
+                "VBS (Segurança baseada em virtualização) cria um ambiente isolado para proteger o kernel. A Integridade de memória (HVCI) roda dentro dele e verifica drivers antes de carregá-los. " +
+                "Desligar os dois costuma custar proteção, mas em jogos pode devolver algum desempenho — especialmente em CPU mais antiga. O efeito só aparece depois de reiniciar. " +
+                "O backup guarda o BCD e todas as chaves alteradas; Desfazer devolve o estado anterior.\r\n\r\n" +
+                "Antes de aplicar, saiba que Valorant (Vanguard) e FACEIT podem exigir VBS/Integridade de memória ligados; WSL2, Docker, Hyper-V e emuladores Android podem deixar de funcionar. " +
+                "Em PC de trabalho com dados sensíveis, mantenha ligado. Grandes atualizações do Windows podem religar o VBS; confira depois de atualizar.",
+                FixLevel.Optional, true, FixCategories.Cpu,
+                async (_, e) =>
+                {
+                    var dir = e.Backup.CurrentBackupDirectory;
+                    if (string.IsNullOrWhiteSpace(dir) || !File.Exists(Path.Combine(dir, "bcd.bak")))
+                        throw new InvalidOperationException(
+                            "O backup do BCD não foi criado. Sem ele o Desfazer não consegue devolver o estado anterior; nada foi alterado.");
+                    await e.Mitigation.ApplyVbsOffAsync(e.CancellationToken);
+                }));
+        }
+
         if (!ctx.Mit.IsDefault)
         {
             var resolution = MitigationService.Resolve(new[] { "padrao" });

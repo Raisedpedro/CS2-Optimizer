@@ -34,7 +34,9 @@ public static class RegistryExports
         new("inputpers.reg", @"HKCU\Software\Microsoft\InputPersonalization"),
         new("inputpol.reg", @"HKLM\SOFTWARE\Policies\Microsoft\InputPersonalization"),
         new("speech.reg", @"HKCU\Software\Microsoft\Speech_OneCore"),
-        new("wer.reg", @"HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting")
+        new("wer.reg", @"HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting"),
+        new("deviceguard.reg", @"HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard"),
+        new("lsa.reg", @"HKLM\SYSTEM\CurrentControlSet\Control\Lsa")
     };
 
     public static string ToLongName(string path) => path

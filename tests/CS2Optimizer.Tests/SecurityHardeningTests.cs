@@ -1,4 +1,5 @@
 using CS2Optimizer.Core.Fixes;
+using CS2Optimizer.Core.Mitigations;
 using CS2Optimizer.Core.Models;
 using CS2Optimizer.Core.Oosu10;
 using CS2Optimizer.Core.Services;
@@ -43,6 +44,23 @@ public sealed class SecurityHardeningTests
         Assert.DoesNotContain(fixes, f => f.Id == "telemetry-servico");
         Assert.DoesNotContain(fixes.Where(f => f.Recommended),
             f => f.Id.StartsWith("telemetry-", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void Vbs_values_are_allowed_for_backup_restore()
+    {
+        Assert.True(RegistryWriteAllowlist.IsAllowed(MitigationService.DeviceGuardKey,
+            MitigationService.EnableVbsValue));
+        Assert.True(RegistryWriteAllowlist.IsAllowed(MitigationService.DeviceGuardKey,
+            MitigationService.RequirePlatformSecurityFeaturesValue));
+        Assert.True(RegistryWriteAllowlist.IsAllowed(MitigationService.HvciKey,
+            MitigationService.EnabledValue));
+        Assert.True(RegistryWriteAllowlist.IsAllowed(MitigationService.KernelShadowStacksKey,
+            MitigationService.EnabledValue));
+        Assert.True(RegistryWriteAllowlist.IsAllowed(MitigationService.CredentialGuardKey,
+            MitigationService.EnabledValue));
+        Assert.True(RegistryWriteAllowlist.IsAllowed(MitigationService.LsaKey,
+            MitigationService.LsaCfgFlagsValue));
     }
 
     [Fact]

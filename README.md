@@ -117,17 +117,23 @@ uma faixa discreta no topo com o link para baixar.
 
 Nada é baixado nem executado automaticamente. Sem internet, a verificação falha em silêncio.
 
-## Mitigações de CPU (Spectre/Meltdown/MDS...)
+## Mitigações de CPU (Spectre/Meltdown/MDS...) e VBS/HVCI
 
-Baseado no KB4073119. O programa só mexe em:
+Baseado no KB4073119 e no KB4072698. Para as mitigações de CPU, o programa só mexe em:
 
 - `FeatureSettingsOverride`
 - `FeatureSettingsOverrideMask`
 - `MinVmVersionForCpuBasedMitigations` (apenas quando o perfil exige e o papel Hyper-V está instalado)
 
+O perfil **BTI / Spectre v2** grava `FeatureSettingsOverride = 1` com máscara `3`, que é a forma documentada pela Microsoft de desligar somente a proteção contra Branch Target Injection (CVE-2017-5715). É opcional e pode ajudar mais em processador antigo.
+
+O cartão **VBS / Integridade de memória** desliga o hipervisor de inicialização e as chaves de Device Guard, HVCI, Kernel Shadow Stacks, Credential Guard e `LsaCfgFlags`. Tudo entra no backup/journal: o BCD é exportado antes e o **Desfazer** devolve o estado anterior. A verificação depois do reinício é feita no `msinfo32` (“Segurança baseada em virtualização” = “Não habilitada”).
+
+Avisos apresentados no app: Valorant (Vanguard) e FACEIT podem exigir VBS ligado; WSL2, Docker, Hyper-V e emuladores Android podem parar de funcionar; em PC de trabalho com dados sensíveis, mantenha ligado. Grandes atualizações do Windows podem religar o VBS.
+
 Regras preservadas:
 
-- **Padrão do Windows** = **apagar** as três chaves (não gravar `0`).
+- **Padrão do Windows** = **apagar** as três chaves de CPU (não gravar `0`); isso não religa o VBS.
 - A máscara é sempre `3` quando há sobrescrita.
 - Perfis combináveis por **OR**.
 - **Não** se mistura perfil que reduz a proteção (`REDUZIDA`) com perfil que aumenta (`MAIOR`).
@@ -245,5 +251,5 @@ Cobrem:
 - Não há garantia de ganho de FPS; vários itens são de fluidez, latência ou apenas limpeza.
 - O backup **não** desfaz `net-reset` (Winsock/TCP-IP) nem o `cs2-reset` (pastas `730` renomeadas para `730.old`); esses casos exigem ação manual.
 - Mitigações e BCD só passam a valer após reiniciar.
-- HVCI/VBS é apenas informativo nesta versão; desligar mexe na Segurança do Windows e não é feito pelo programa.
+- Desligar VBS/HVCI reduz uma camada de proteção do kernel; o app avisa e exige backup do BCD antes de aplicar. Valorant/FACEIT e ferramentas de virtualização podem ser afetadas.
 - O programa foi testado neste ambiente (Windows 11, AMD/NVIDIA). Teste em VM Windows 10/11, Intel e AMD, desktop e notebook antes de distribuir em larga escala.

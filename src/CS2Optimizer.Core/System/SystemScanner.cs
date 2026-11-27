@@ -245,6 +245,7 @@ public sealed class SystemScanner
                 try { return Convert.ToInt32(v) == 2; } catch { return false; }
             });
         });
+        ctx.Vbs = await _mitigation.GetVbsStateAsync(ctx.HvciActive, cancellationToken);
 
         // ---------------- Processos / inicialização ----------------
         var running = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

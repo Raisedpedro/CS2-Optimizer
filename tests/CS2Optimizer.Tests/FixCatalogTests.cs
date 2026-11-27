@@ -1,4 +1,5 @@
 using CS2Optimizer.Core.Fixes;
+using CS2Optimizer.Core.Mitigations;
 using CS2Optimizer.Core.Models;
 
 namespace CS2Optimizer.Tests;
@@ -30,7 +31,7 @@ public sealed class FixCatalogTests
             "privacy-handwriting", "privacy-bluetooth-ads", "privacy-lockscreen-camera",
             "privacy-inventory", "privacy-onesettings", "privacy-location-service",
             "privacy-edge", "privacy-device-meta", "privacy-people-taskbar",
-            "privacy-update-defer"
+            "privacy-update-defer", "vbs-off"
         };
         var fixes = FixCatalog.Build(new FixContext());
 
@@ -74,5 +75,33 @@ public sealed class FixCatalogTests
     {
         var fixes = FixCatalog.Build(new FixContext { OnPerformancePowerPlan = true });
         Assert.DoesNotContain(fixes, fix => fix.Id == "power-plan");
+    }
+
+    [Fact]
+    public void Vbs_off_is_recommended_when_vbs_is_enabled()
+    {
+        var context = new FixContext
+        {
+            Vbs = new VbsState("auto", 1, 1, 1, null, null, 1, true)
+        };
+
+        var vbs = Assert.Single(FixCatalog.Build(context), fix => fix.Id == "vbs-off");
+
+        Assert.Equal(FixLevel.Optional, vbs.Level);
+        Assert.True(vbs.Recommended);
+        Assert.True(vbs.RequiresReboot);
+        Assert.Contains("Valorant", vbs.Explanation);
+        Assert.Contains("FACEIT", vbs.Explanation);
+    }
+
+    [Fact]
+    public void Vbs_off_is_not_offered_when_already_configured_off()
+    {
+        var context = new FixContext
+        {
+            Vbs = new VbsState("off", 0, 0, 0, 0, 0, 0, true)
+        };
+
+        Assert.DoesNotContain(FixCatalog.Build(context), fix => fix.Id == "vbs-off");
     }
 }

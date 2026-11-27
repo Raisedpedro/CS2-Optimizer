@@ -69,6 +69,29 @@ public sealed class BackupServiceRegTests
     }
 
     [Fact]
+    public void Accepts_vbs_values_in_exported_keys()
+    {
+        var file = WriteReg(
+            "Windows Registry Editor Version 5.00\r\n\r\n" +
+            "[HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\DeviceGuard]\r\n" +
+            "\"EnableVirtualizationBasedSecurity\"=dword:00000001\r\n" +
+            "\"RequirePlatformSecurityFeatures\"=dword:00000001\r\n\r\n" +
+            "[HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\DeviceGuard\\Scenarios\\HypervisorEnforcedCodeIntegrity]\r\n" +
+            "\"Enabled\"=dword:00000001\r\n\r\n" +
+            "[HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Lsa]\r\n" +
+            "\"LsaCfgFlags\"=dword:00000001\r\n");
+
+        try
+        {
+            Assert.True(BackupService.TestRegSafe(file));
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
+    [Fact]
     public void Rejects_dangerous_value_name_in_exported_key()
     {
         var file = WriteReg(

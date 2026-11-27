@@ -34,7 +34,7 @@ public sealed class AppServices
         var runner = new ExternalProcessRunner();
         var backup = new BackupService(registry, runner, logger, baseDir);
         backup.MigrateLegacyBackups();
-        var mitigation = new MitigationService(registry);
+        var mitigation = new MitigationService(registry, runner);
         var oosu10 = new Oosu10Service(registry);
         var scanner = new SystemScanner(registry, runner, mitigation, logger);
         var diagnostics = new DiagnosticEngine(logger);
